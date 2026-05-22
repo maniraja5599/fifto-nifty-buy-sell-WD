@@ -1,0 +1,20 @@
+# Python pycache
+__pycache__/
+*.pyc
+
+# Local configuration with API keys and secrets (CRITICAL)
+data/config.json
+
+# Live status and log outputs
+data/live_status.json
+data/terminal.log
+
+# Raw NSE tick data files (they are large and auto-downloaded/mocked)
+data/*.csv
+
+# Local environment and IDEs
+venv/
+.venv/
+.env
+.idea/
+.vscode/

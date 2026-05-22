@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIFTY Pivot Gap Strategy - Web Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Premium CSS Styles -->
+    <style>
+        :root {
+            --bg-color: #080a11;
+            --panel-bg: rgba(255, 255, 255, 0.03);
+            --panel-border: rgba(255, 255, 255, 0.06);
+            --panel-hover: rgba(255, 255, 255, 0.05);
+            
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.35);
+            --secondary: #06b6d4;
+            --secondary-glow: rgba(6, 182, 212, 0.35);
+            
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.25);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.25);
+            --warning: #f59e0b;
+            --warning-glow: rgba(245, 158, 11, 0.25);
+            
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-dark: #6b7280;
+            
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+            
+            --card-radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 40%);
+            background-attachment: fixed;
+            padding: 24px;
+        }
+
+        /* Layout Grid */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        /* Glassmorphism Card Style */
+        .card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--card-radius);
+            padding: 24px;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.1);
+            background: var(--panel-hover);
+            box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header Style */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .logo-section h1 {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #a78bfa 0%, #22d3ee 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-section p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Glowing Status Badge */
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--panel-border);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-WAIT_MARKET { color: var(--warning); border-color: var(--warning-glow); }
+        .status-WAIT_MARKET .status-dot { background-color: var(--warning); box-shadow: 0 0 10px var(--warning); }
+        
+        .status-SCANNING { color: var(--secondary); border-color: var(--secondary-glow); }
+        .status-SCANNING .status-dot { background-color: var(--secondary); box-shadow: 0 0 10px var(--secondary); animation: pulse-breathe 2s infinite; }
+        
+        .status-IN_TRADE { color: var(--primary); border-color: var(--primary-glow); }
+        .status-IN_TRADE .status-dot { background-color: var(--primary); box-shadow: 0 0 10px var(--primary); animation: pulse-breathe 1s infinite; }
+        
+        .status-CLOSED { color: var(--text-muted); border-color: var(--panel-border); }
+        .status-CLOSED .status-dot { background-color: var(--text-muted); }
+        
+        .status-NO_TRADE { color: var(--text-dark); border-color: var(--panel-border); }
+        .status-NO_TRADE .status-dot { background-color: var(--text-dark); }
+        
+        .status-OFFLINE { color: var(--danger); border-color: var(--danger-glow); }
+        .status-OFFLINE .status-dot { background-color: var(--danger); box-shadow: 0 0 10px var(--danger); }
+
+        /* Custom OpenAlgo Connection Status Styles */
+        .status-openalgo-online { color: var(--success); border-color: var(--success-glow); }
+        .status-openalgo-online .status-dot { background-color: var(--success); box-shadow: 0 0 10px var(--success); }
+        
+        .status-openalgo-offline { color: var(--danger); border-color: var(--danger-glow); }
+        .status-openalgo-offline .status-dot { background-color: var(--danger); box-shadow: 0 0 10px var(--danger); }
+
+        /* Custom Feed Connection Status Styles */
+        .status-feed-active { color: var(--success); border-color: var(--success-glow); }
+        .status-feed-active .status-dot { background-color: var(--success); box-shadow: 0 0 10px var(--success); animation: pulse-breathe 2s infinite; }
+        
+        .status-feed-standby { color: var(--secondary); border-color: var(--secondary-glow); }
+        .status-feed-standby .status-dot { background-color: var(--secondary); box-shadow: 0 0 10px var(--secondary); }
+        
+        .status-feed-stale { color: var(--warning); border-color: var(--warning-glow); }
+        .status-feed-stale .status-dot { background-color: var(--warning); box-shadow: 0 0 10px var(--warning); animation: pulse-breathe 1.5s infinite; }
+        
+        .status-feed-error { color: var(--danger); border-color: var(--danger-glow); }
+        .status-feed-error .status-dot { background-color: var(--danger); box-shadow: 0 0 10px var(--danger); }
+        
+        .status-feed-inactive { color: var(--text-dark); border-color: var(--panel-border); }
+        .status-feed-inactive .status-dot { background-color: var(--text-dark); }
+
+        /* Top Metrics Row */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .metric-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 120px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .metric-card.spot::before { background: var(--secondary); }
+        .metric-card.pnl-buy::before { background: var(--success); }
+        .metric-card.pnl-sell::before { background: var(--primary); }
+        .metric-card.gap::before { background: var(--warning); }
+
+        /* Dual-Strategy Telemetry Layout */
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        @media (max-width: 768px) {
+            .strategy-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .strategy-card {
+            border-top: 4px solid var(--panel-border);
+            position: relative;
+        }
+        
+        .strategy-card.buying {
+            border-top-color: var(--success);
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
+        }
+        
+        .strategy-card.selling {
+            border-top-color: var(--primary);
+            background: linear-gradient(180deg, rgba(139, 92, 246, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
+        }
+        
+        .strat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 12px;
+        }
+        
+        .strat-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .strat-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            font-style: italic;
+        }
+        
+        .strat-data-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .strat-data-item {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .strat-data-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+        
+        .strat-data-value {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            word-break: break-all;
+        }
+        
+        .strat-pnl-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-top: 16px;
+        }
+        
+        .strat-pnl-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        
+        .strat-pnl-value {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 800;
+        }
+        
+        .distance-bar-container {
+            margin-top: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            height: 24px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        
+        .distance-bar-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            transition: width 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            opacity: 0.15;
+        }
+        
+        .distance-bar-text {
+            position: relative;
+            z-index: 2;
+            color: var(--text-main);
+        }
+
+        .metric-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 700;
+            margin: 8px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .metric-desc {
+            font-size: 12px;
+            color: var(--text-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pulse-text {
+            animation: text-glow 2s infinite ease-in-out;
+        }
+
+        /* 2 Column Main Section */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Visual Pivots Gauge */
+        .pivots-section {
+            margin-bottom: 24px;
+        }
+
+        .gauge-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pivots-track-container {
+            position: relative;
+            padding: 32px 0 16px 0;
+            margin: 0 10px;
+        }
+
+        .pivots-track {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .pivot-marker {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .pivot-node {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            border: 2px solid var(--bg-color);
+            transition: var(--transition);
+        }
+
+        .pivot-marker:hover .pivot-node {
+            transform: scale(1.4);
+        }
+
+        .pivot-marker.p-node .pivot-node { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
+        .pivot-marker.r-node .pivot-node { background: var(--secondary); }
+        .pivot-marker.s-node .pivot-node { background: var(--warning); }
+
+        .pivot-label {
+            position: absolute;
+            top: -24px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .pivot-value {
+            position: absolute;
+            bottom: -22px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-main);
+            font-family: var(--font-mono);
+        }
+
+        .live-price-pointer {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: left 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .pointer-arrow {
+            width: 14px;
+            height: 14px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ffffff, 0 0 5px var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .pointer-label {
+            position: absolute;
+            bottom: 18px;
+            background: #ffffff;
+            color: #000000;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Buttons & Forms styling */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px var(--success-glow);
+        }
+
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px var(--danger-glow);
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .form-title {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-main);
+            font-family: var(--font-body);
+            font-size: 13px;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+        }
+
+        /* Retro Terminal Widget */
+        .terminal-card {
+            display: flex;
+            flex-direction: column;
+            height: 380px;
+        }
+
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--panel-border);
+            margin-bottom: 12px;
+        }
+
+        .terminal-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .terminal-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-dark);
+        }
+
+        .terminal-dot.red { background-color: #ef4444; }
+        .terminal-dot.yellow { background-color: #f59e0b; }
+        .terminal-dot.green { background-color: #10b981; }
+
+        .terminal-body {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 16px;
+            flex-grow: 1;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.5;
+            color: #38bdf8; /* light blue */
+            overflow-y: auto;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        /* Trade logs history table */
+        .history-card {
+            margin-top: 24px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        th {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--panel-border);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            color: var(--text-main);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .pnl-tag {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            font-size: 12px;
+        }
+
+        .pnl-gain {
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .pnl-loss {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .badge-target { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .badge-sl { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .badge-eod { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .badge-strangle { background: rgba(139, 92, 246, 0.1); color: var(--primary); border: 1px solid rgba(139, 92, 246, 0.2); }
+
+        /* Animations */
+        @keyframes pulse-breathe {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.15); }
+        }
+
+        @keyframes text-glow {
+            0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.1)); }
+            50% { filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5)); }
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--panel-border);
+            backdrop-filter: blur(10px);
+            padding: 16px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--secondary); }
+
+        .toast-message {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Documentation Panel Styling */
+        .doc-card {
+            margin-top: 24px;
+            border-left: 4px solid var(--secondary);
+            background: linear-gradient(180deg, rgba(6, 182, 212, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
+        }
+
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .doc-header h3 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .doc-toggle-icon {
+            transition: transform var(--transition);
+            color: var(--text-muted);
+        }
+
+        .doc-toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .doc-content {
+            transition: max-height 0.4s ease-out, opacity 0.3s ease;
+            overflow: hidden;
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        .doc-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            padding-bottom: 0;
+            margin-bottom: 0;
+            border: none;
+        }
+
+        .doc-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 10px;
+        }
+
+        .doc-tab-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--panel-border);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .doc-tab-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+        }
+
+        .doc-tab-btn.active {
+            background: linear-gradient(135deg, var(--secondary) 0%, #0891b2 100%);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 10px var(--secondary-glow);
+        }
+
+        .doc-tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .doc-tab-content.active {
+            display: block;
+        }
+
+        .doc-rule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .doc-rule-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: var(--transition);
+        }
+
+        .doc-rule-card:hover {
+            border-color: rgba(6, 182, 212, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .doc-rule-card h4 {
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding-bottom: 6px;
+        }
+
+        .doc-rule-card ul {
+            list-style-type: none;
+            padding-left: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .doc-rule-card li {
+            font-size: 12.5px;
+            line-height: 1.5;
+            color: var(--text-muted);
+            position: relative;
+            padding-left: 16px;
+        }
+
+        .doc-rule-card li::before {
+            content: '•';
+            color: var(--secondary);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .doc-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="container">
+        
+        <!-- Header Section -->
+        <header class="card">
+            <div class="logo-section">
+                <h1>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+                        <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="url(#boltGrad)" stroke="#8b5cf6" stroke-width="2" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="boltGrad" x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#8b5cf6"/>
+                                <stop offset="1" stop-color="#06b6d4"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    NIFTY PIVOT GAP STRATEGY
+                </h1>
+                <p>Premium Real-time Intraday Options Scanner & Paper Trading Dashboard</p>
+            </div>
+            
+            <div class="header-controls">
+                <div id="liveClock" style="font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); margin-right: 12px;">00:00:00</div>
+                
+                <!-- OpenAlgo Server Connection Badge -->
+                <div class="status-badge status-openalgo-offline" id="openalgoStatus" title="OpenAlgo API Server Status">
+                    <span class="status-dot"></span>
+                    <span id="openalgoStatusText">OpenAlgo: Offline</span>
+                </div>
+
+                <!-- Live Market Data Feed Badge -->
+                <div class="status-badge status-feed-inactive" id="feedStatus" title="Broker Market Data Feed Status">
+                    <span class="status-dot"></span>
+                    <span id="feedStatusText">Feed: Inactive</span>
+                </div>
+
+                <!-- Main Strategy Scanner Badge -->
+                <div class="status-badge status-OFFLINE" id="scannerStatus" title="Scanner Engine Status">
+                    <span class="status-dot"></span>
+                    <span id="scannerStatusText">OFFLINE</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Top Metrics Row -->
+        <div class="metrics-grid">
+            
+            <div class="card metric-card spot">
+                <div>
+                    <div class="metric-label">NIFTY Live Spot</div>
+                    <div class="metric-value" id="spotLtp">-</div>
+                </div>
+                <div class="metric-desc">
+                    <span id="spotChange">-%</span>
+                    <span style="font-size: 10px; color: var(--text-dark);" id="spotTime">Last update: --:--:--</span>
+                </div>
+            </div>
+
+            <div class="card metric-card pnl-buy">
+                <div>
+                    <div class="metric-label">BASE Option Buying P&L</div>
+                    <div class="metric-value pulse-text" id="buyPnl" style="color: var(--text-muted);">₹0.00</div>
+                </div>
+                <div class="metric-desc">
+                    <span id="buySymbol">No active trade</span>
+                    <span id="buyPnlPts" style="font-weight: 600;">0.00 pts</span>
+                </div>
+            </div>
+
+            <div class="card metric-card pnl-sell">
+                <div>
+                    <div class="metric-label">Strangle Short Selling P&L</div>
+                    <div class="metric-value pulse-text" id="sellPnl" style="color: var(--text-muted);">₹0.00</div>
+                </div>
+                <div class="metric-desc">
+                    <span id="sellSymbol">No active trade</span>
+                    <span id="sellPnlPts" style="font-weight: 600;">0.00 pts</span>
+                </div>
+            </div>
+
+            <div class="card metric-card gap">
+                <div>
+                    <div class="metric-label">Opening Gap</div>
+                    <div class="metric-value" id="gapValue" style="color: var(--text-main);">-</div>
+                </div>
+                <div class="metric-desc">
+                    <span id="gapOpen">Open: -</span>
+                    <span id="gapPrevClose">Prev Close: -</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Horizontal Pivots Gauge (Relative Slider) -->
+        <div class="card">
+            <div class="gauge-title">
+                <span>Spot Position Relative to Pivots</span>
+                <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);" id="pivotsDate">Trading Date: ----</span>
+            </div>
+            
+            <div class="pivots-track-container">
+                <div class="pivots-track" id="pivotsTrack">
+                    <!-- Pivot Markers -->
+                    <div class="pivot-marker s-node" style="left: 0%;" id="markerS2">
+                        <span class="pivot-label">S2</span>
+                        <div class="pivot-node"></div>
+                        <span class="pivot-value" id="valS2">-</span>
+                    </div>
+                    <div class="pivot-marker s-node" style="left: 25%;" id="markerS1">
+                        <span class="pivot-label">S1 (PE Target)</span>
+                        <div class="pivot-node"></div>
+                        <span class="pivot-value" id="valS1">-</span>
+                    </div>
+                    <div class="pivot-marker p-node" style="left: 50%;" id="markerP">
+                        <span class="pivot-label">P (Pivot Signal)</span>
+                        <div class="pivot-node"></div>
+                        <span class="pivot-value" id="valP">-</span>
+                    </div>
+                    <div class="pivot-marker r-node" style="left: 75%;" id="markerR1">
+                        <span class="pivot-label">R1 (CE Target)</span>
+                        <div class="pivot-node"></div>
+                        <span class="pivot-value" id="valR1">-</span>
+                    </div>
+                    <div class="pivot-marker r-node" style="left: 100%;" id="markerR2">
+                        <span class="pivot-label">R2</span>
+                        <div class="pivot-node"></div>
+                        <span class="pivot-value" id="valR2">-</span>
+                    </div>
+                    
+                    <!-- Live spot pointer dot -->
+                    <div class="live-price-pointer" style="left: 50%; display: none;" id="livePointer">
+                        <div class="pointer-label" id="pointerVal">-</div>
+                        <div class="pointer-arrow"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Strategy Telemetry (Dual-Card View) -->
+        <div class="strategy-grid">
+            
+            <!-- Strategy 1: Option Buying (BASE) Card -->
+            <div class="card strategy-card buying">
+                <div class="strat-header">
+                    <div class="strat-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Strategy 1: Option Buying (BASE)
+                    </div>
+                    <div class="status-badge status-OFFLINE" id="buyStatusBadge">
+                        <span class="status-dot"></span>
+                        <span id="buyStatusText">OFFLINE</span>
+                    </div>
+                </div>
+                <div class="strat-desc" id="buyStatusDesc">Scanning for P-touch...</div>
+                
+                <div class="strat-data-grid">
+                    <div class="strat-data-item">
+                        <div class="strat-data-label">Instrument / Strike</div>
+                        <div class="strat-data-value" id="buyActiveSymbol">-</div>
+                    </div>
+                    <div class="strat-data-item">
+                        <div class="strat-data-label">Entry Details</div>
+                        <div class="strat-data-value" id="buyEntryDetails">-</div>
+                    </div>
+                    <div class="strat-data-item">
+                        <div class="strat-data-label">Target Spot</div>
+                        <div class="strat-data-value" id="buyTargetDetails" style="color: var(--success);">-</div>
+                    </div>
+                    <div class="strat-data-item">
+                        <div class="strat-data-label">Stop Loss Spot</div>
+                        <div class="strat-data-value" id="buySLDetails" style="color: var(--danger);">-</div>
+                    </div>
+                </div>
+
+                <!-- Distance indicators -->
+                <div id="buyDistanceIndicators" style="display: none;">
+                    <div class="distance-bar-container" style="margin-bottom: 8px;">
+                        <div class="distance-bar-fill" id="buyTargetFill" style="background: var(--success);"></div>
+                        <span class="distance-bar-text" id="buyTargetDistText">To Target: -</span>
+                    </div>
+                    <div class="distance-bar-container">
+                        <div class="distance-bar-fill" id="buySLFill" style="background: var(--danger);"></div>
+                        <span class="distance-bar-text" id="buySLDistText">To Stop Loss: -</span>
+                    </div>
+                </div>
+                
+                <div class="strat-pnl-section">
+                    <span class="strat-pnl-label">Live Buying P&L</span>
+                    <span class="strat-pnl-value" id="buyPnlText" style="color: var(--text-dark);">₹0.00</span>
+                </div>
+            </div>
+
+            <!-- Strategy 2: Option Selling (Strangle) Card -->
+            <div class="card strategy-card selling">
+                <div class="strat-header">
+                    <div class="strat-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="3" x2="9" y2="21"></line>
+                        </svg>
+                        Strategy 2: Option Selling (Strangle)
+                    </div>
+                    <div class="status-badge status-OFFLINE" id="sellStatusBadge">
+                        <span class="status-dot"></span>
+                        <span id="sellStatusText">OFFLINE</span>
+                    </div>
+                </div>
+                <div class="strat-desc" id="sellStatusDesc">Waiting for 09:16 strangle entry...</div>
+                
+                <div class="strat-data-grid">
+                    <div class="strat-data-item">
+                        <div class="strat-data-label">CE Leg (Strike/LTP)</div>
+                        <div class="strat-data-value" id="sellCeDetails">-</div>
+                    </div>
+                    <div class="strat-data-item">
+                        <div class="strat-data-label">PE Leg (Strike/LTP)</div>
+                        <div class="strat-data-value" id="sellPeDetails">-</div>
+                    </div>
+                    <div class="strat-data-item">
+                        <div class="strat-data-label">Entry Time</div>
+                        <div class="strat-data-value" id="sellEntryTime">-</div>
+                    </div>
+                    <div class="strat-data-item">
+                        <div class="strat-data-label">Combined SL Trigger</div>
+                        <div class="strat-data-value" id="sellSlTrigger" style="color: var(--danger);">-₹7,000.00</div>
+                    </div>
+                </div>
+
+                <!-- Combined SL progress indicator -->
+                <div id="sellSLProgressContainer" style="display: none; margin-top: 12px;">
+                    <div class="distance-bar-container">
+                        <div class="distance-bar-fill" id="sellSLProgressFill" style="background: var(--danger);"></div>
+                        <span class="distance-bar-text" id="sellSLProgressText">Combined SL Margin: -</span>
+                    </div>
+                </div>
+                
+                <div class="strat-pnl-section">
+                    <span class="strat-pnl-label">Live Strangle P&L</span>
+                    <span class="strat-pnl-value" id="sellPnlText" style="color: var(--text-dark);">₹0.00</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 2 Column Main Section -->
+        <div class="main-grid">
+            
+            <!-- Left Side: Terminal Log widget -->
+            <div class="card terminal-card">
+                <div class="terminal-header">
+                    <div class="logo-section">
+                        <span style="font-family: var(--font-display); font-weight: 600; font-size: 15px;">Live Execution Terminal</span>
+                    </div>
+                    <div class="terminal-actions">
+                        <div class="terminal-dot red"></div>
+                        <div class="terminal-dot yellow"></div>
+                        <div class="terminal-dot green"></div>
+                    </div>
+                </div>
+                <div class="terminal-body" id="terminalLog">Loading logs...</div>
+            </div>
+
+            <!-- Right Side: Configuration & Controls -->
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 class="form-title">Strategy Controls</h3>
+                    
+                    <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+                        <button class="btn btn-start" id="btnStart" onclick="controlScanner('start')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Start Scanner
+                        </button>
+                        <button class="btn btn-stop" id="btnStop" onclick="controlScanner('stop')" disabled>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+                            Stop Scanner
+                        </button>
+                    </div>
+
+                    <h3 class="form-title">Parameters Configuration</h3>
+                    
+                    <form id="configForm" onsubmit="event.preventDefault(); saveConfig();">
+                        <div class="form-group">
+                            <label for="OPENALGO_API_KEY">OpenAlgo API Key</label>
+                            <input type="password" id="OPENALGO_API_KEY" placeholder="API Key from Dashboard" required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="LOT_SIZE">NIFTY Lot Size</label>
+                                <input type="number" id="LOT_SIZE" required min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="GAP_THRESH">Min Gap Thresh (Pts)</label>
+                                <input type="number" id="GAP_THRESH" step="0.1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="P_TOL">P Tolerance (Pts)</label>
+                                <input type="number" id="P_TOL" step="0.1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="SL_PTS">SL from P (Pts)</label>
+                                <input type="number" id="SL_PTS" step="0.1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ENTRY_CUTOFF">Entry Cutoff</label>
+                                <input type="text" id="ENTRY_CUTOFF" placeholder="HH:MM" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="EOD_EXIT">EOD Force Exit</label>
+                                <input type="text" id="EOD_EXIT" placeholder="HH:MM" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="OPENALGO_HOST">OpenAlgo Server Host</label>
+                                <input type="text" id="OPENALGO_HOST" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="PAPER_TRADE">Trade Mode</label>
+                                <select id="PAPER_TRADE">
+                                    <option value="true">Paper Trade Only</option>
+                                    <option value="false">Live Execution</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-start" type="submit" style="width: 100%; margin-top: 12px; background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%); box-shadow: 0 4px 15px var(--primary-glow);">
+                            Save Configuration
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Collapsible Documentation Panel -->
+        <div class="card doc-card">
+            <div class="doc-header" onclick="toggleDocPanel()">
+                <h3 style="margin-bottom: 0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    Strategy Rules & Execution Documentation (V3.0)
+                </h3>
+                <svg id="docToggleArrow" class="doc-toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
+            
+            <div class="doc-content" id="docPanelContent">
+                <div class="doc-tabs">
+                    <button class="doc-tab-btn active" onclick="switchDocTab(this, 'buyDoc')">Strategy 1: Option Buying (BASE)</button>
+                    <button class="doc-tab-btn" onclick="switchDocTab(this, 'sellDoc')">Strategy 2: Option Selling (Strangle)</button>
+                    <button class="doc-tab-btn" onclick="switchDocTab(this, 'generalDoc')">General Rules & Skipping</button>
+                </div>
+                
+                <!-- Tab 1: Option Buying (BASE) -->
+                <div class="doc-tab-content active" id="buyDoc">
+                    <div class="doc-rule-grid">
+                        <div class="doc-rule-card">
+                            <h4 style="color: var(--success);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                Setup & Gap Conditions
+                            </h4>
+                            <ul>
+                                <li><strong>Gap Requirement:</strong> Opening gap must be greater than <span class="doc-badge badge-target">> 30 pts</span> (Gap Up) or less than <span class="doc-badge badge-sl">< -30 pts</span> (Gap Down).</li>
+                                <li><strong>Directional Rule:</strong>
+                                    <br>• If Gap Up: Market open price must be <strong>above</strong> Pivot level (P).
+                                    <br>• If Gap Down: Market open price must be <strong>below</strong> Pivot level (P).
+                                </li>
+                                <li><strong>No Trade on Flat Opens:</strong> If opening gap is within ±30 points, Strategy 1 is completely skipped.</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="doc-rule-card">
+                            <h4 style="color: var(--warning);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                Entry Trigger & Logic
+                            </h4>
+                            <ul>
+                                <li><strong>Pivot Touch:</strong> Spot price must touch or cross the Pivot level (P) before <span class="doc-badge badge-eod">13:00</span> cutoff.</li>
+                                <li><strong>P Tolerance:</strong> A margin of <span class="doc-badge badge-target">±10 points</span> around P counts as a valid touch.</li>
+                                <li><strong>Delayed Entry:</strong> When touch is detected, it waits for the current 1-minute candle to close + 2 seconds buffer (e.g. entry at <code>candle_end + 2s</code>) to filter out fake breaks.</li>
+                                <li><strong>Lots & Expiry:</strong> Buys <span class="doc-badge badge-strangle">2 Lots (130 shares)</span> of ATM Call (CE) for Gap Up or ATM Put (PE) for Gap Down.</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="doc-rule-card">
+                            <h4 style="color: var(--danger);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+                                Target, SL & Exit
+                            </h4>
+                            <ul>
+                                <li><strong>CE Target:</strong> R1 Pivot level (Spot).</li>
+                                <li><strong>CE Stop Loss:</strong> Pivot level (P) minus 20 points (<span class="doc-badge badge-sl">P - 20</span>).</li>
+                                <li><strong>PE Target:</strong> S1 Pivot level (Spot).</li>
+                                <li><strong>PE Stop Loss:</strong> Pivot level (P) plus 20 points (<span class="doc-badge badge-sl">P + 20</span>).</li>
+                                <li><strong>EOD Force Exit:</strong> If target or SL is not hit by <span class="doc-badge badge-eod">15:20</span>, the strategy auto-exits at market premium.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab 2: Option Selling (Strangle) -->
+                <div class="doc-tab-content" id="sellDoc">
+                    <div class="doc-rule-grid">
+                        <div class="doc-rule-card">
+                            <h4 style="color: var(--success);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                Setup & Gap Conditions
+                            </h4>
+                            <ul>
+                                <li><strong>Any Gap Day:</strong> Requires opening gap greater than <span class="doc-badge badge-target">> 30 pts</span> (Gap Up) or less than <span class="doc-badge badge-sl">< -30 pts</span> (Gap Down).</li>
+                                <li><strong>No Directional Bias:</strong> Runs same trade regardless of whether gap is up or down.</li>
+                                <li><strong>No Pivot Touch Required:</strong> Operates entirely independently of the Pivot level (P) touch.</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="doc-rule-card">
+                            <h4 style="color: var(--warning);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                Entry Trigger & Strikes
+                            </h4>
+                            <ul>
+                                <li><strong>Immediate Entry:</strong> Automatically fires orders exactly at <span class="doc-badge badge-eod">09:16:02</span> on all valid gap days.</li>
+                                <li><strong>Legs & Strikes:</strong> Shorts a symmetric <strong>ATM ± 100</strong> strangle:
+                                    <br>• Shorts 1 Lot (65 shares) of <strong>ATM + 100 CE</strong>.
+                                    <br>• Shorts 1 Lot (65 shares) of <strong>ATM - 100 PE</strong>.
+                                </li>
+                                <li><strong>Lots:</strong> 1 Lot each (Total margin blocked: ~₹70,000 - ₹80,000 depending on broker).</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="doc-rule-card">
+                            <h4 style="color: var(--danger);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+                                Target, SL & Exit
+                            </h4>
+                            <ul>
+                                <li><strong>Combined SL Limit:</strong> Total M2M combined loss across CE and PE premium is capped at <span class="doc-badge badge-sl">₹7,000</span>.</li>
+                                <li><strong>Live Monitoring:</strong> Evaluates combined P&L in real-time: <code>(ce_entry - ce_ltp + pe_entry - pe_ltp) * 65</code>.</li>
+                                <li><strong>SL Trigger:</strong> If combined loss hits or exceeds -₹7,000, both legs are closed simultaneously at market.</li>
+                                <li><strong>EOD Force Exit:</strong> If combined SL is not hit, the strangle is squared off at <span class="doc-badge badge-eod">15:20</span> to collect theta decay.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab 3: General Rules & Skipping -->
+                <div class="doc-tab-content" id="generalDoc">
+                    <div class="doc-rule-grid">
+                        <div class="doc-rule-card">
+                            <h4 style="color: var(--primary);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                Safety Rules
+                            </h4>
+                            <ul>
+                                <li><strong>Thursday Expiry Skip:</strong> Both strategies are strictly disabled on Thursday to prevent 0DTE options decay and gamma risk.</li>
+                                <li><strong>Max Daily Loss Limits:</strong> Buying is limited by P±20 spot SL. Selling is protected by the combined ₹7,000 SL.</li>
+                                <li><strong>Execution Modes:</strong> Switch between Paper Trade (Simulated Orders) and Live Execution (Angel One via OpenAlgo) inside the config panel.</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="doc-rule-card">
+                            <h4 style="color: var(--secondary);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                Backtest & Historical ROI
+                            </h4>
+                            <ul>
+                                <li><strong>Option Buying (BASE):</strong> 1-year backtest profit of <span style="color: var(--success); font-weight: 600;">+₹1,11,787</span> (using 2-lot premium ROI of 721%).</li>
+                                <li><strong>Option Selling (Strangle):</strong> 1-year backtest profit of <span style="color: var(--success); font-weight: 600;">+₹1,16,100</span> (approx. 145-193% on margin).</li>
+                                <li><strong>Combined Profit:</strong> Net profit of <span style="color: var(--success); font-weight: 700;">+₹2,27,887</span> over 252 trading days in 2025-2026.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historical Logs Table Card -->
+        <div class="card history-card">
+            <h3 class="form-title" style="margin-bottom: 0;">Trade Execution Log History</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Symbol</th>
+                            <th>Signal / Entry Time</th>
+                            <th>Entry Price</th>
+                            <th>Exit Time</th>
+                            <th>Exit Price</th>
+                            <th>Result</th>
+                            <th>Gap</th>
+                            <th>P / Target</th>
+                            <th>Net P&L</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr>
+                            <td colspan="10" style="text-align: center; color: var(--text-dark); padding: 30px;">Loading historical logs...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Frontend logic scripts -->
+    <script>
+        // Collapsible Documentation Functions
+        function toggleDocPanel() {
+            const content = document.getElementById('docPanelContent');
+            const arrow = document.getElementById('docToggleArrow');
+            content.classList.toggle('collapsed');
+            arrow.classList.toggle('collapsed');
+            
+            // Save state to localStorage to persist user preference
+            const isCollapsed = content.classList.contains('collapsed');
+            localStorage.setItem('docPanelCollapsed', isCollapsed ? 'true' : 'false');
+        }
+        
+        function switchDocTab(btn, tabId) {
+            // Deactivate all tabs and tab contents
+            const tabs = document.querySelectorAll('.doc-tab-btn');
+            const contents = document.querySelectorAll('.doc-tab-content');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+            
+            // Activate target tab and content
+            if (btn) {
+                btn.classList.add('active');
+            }
+            
+            const targetContent = document.getElementById(tabId);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        }
+
+        // Initialize Doc Panel State from localStorage on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const isCollapsed = localStorage.getItem('docPanelCollapsed');
+            if (isCollapsed === 'true') {
+                const content = document.getElementById('docPanelContent');
+                const arrow = document.getElementById('docToggleArrow');
+                content.classList.add('collapsed');
+                arrow.classList.add('collapsed');
+            }
+        });
+
+        // Live Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('liveClock').textContent = now.toLocaleTimeString();
+        }, 1000);
+
+        // Toast Messages
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = '';
+            if (type === 'success') icon = '✓';
+            else if (type === 'error') icon = '✗';
+            else icon = 'ℹ';
+            
+            toast.innerHTML = `
+                <div style="font-weight:800; font-size:16px; color:inherit;">${icon}</div>
+                <div class="toast-message">${message}</div>
+            `;
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 4000);
+        }
+
+        // Global state variable
+        let lastScannerStatus = null;
+
+        // Fetch Live Status & Update Metrics UI
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (!response.ok) throw new Error("API status failed");
+                const data = await response.json();
+                
+                // Update Badge status
+                const badge = document.getElementById('scannerStatus');
+                const text = document.getElementById('scannerStatusText');
+                
+                badge.className = `status-badge status-${data.status}`;
+                text.textContent = data.status.replace('_', ' ');
+
+                // Update OpenAlgo Status Badge
+                const openalgoBadge = document.getElementById('openalgoStatus');
+                const openalgoText = document.getElementById('openalgoStatusText');
+                if (data.openalgo_online) {
+                    openalgoBadge.className = 'status-badge status-openalgo-online';
+                    openalgoText.textContent = 'OpenAlgo: Online';
+                } else {
+                    openalgoBadge.className = 'status-badge status-openalgo-offline';
+                    openalgoText.textContent = 'OpenAlgo: Offline';
+                }
+
+                // Update Data Feed Status Badge
+                const feedBadge = document.getElementById('feedStatus');
+                const feedText = document.getElementById('feedStatusText');
+                const feedStatus = data.feed_status || 'INACTIVE';
+                feedBadge.className = `status-badge status-feed-${feedStatus.toLowerCase()}`;
+                feedText.textContent = `Feed: ${feedStatus}`;
+
+                // Check button state
+                const startBtn = document.getElementById('btnStart');
+                const stopBtn = document.getElementById('btnStop');
+                
+                if (data.scanner_running) {
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                } else {
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+
+                // If status changed to closed or no trade, reload CSV logs
+                if (lastScannerStatus && lastScannerStatus !== data.status && (data.status === 'CLOSED' || data.status === 'NO_TRADE')) {
+                    fetchLogs();
+                }
+                lastScannerStatus = data.status;
+
+                // Update Spot Price & change
+                const spotLtp = document.getElementById('spotLtp');
+                const spotChange = document.getElementById('spotChange');
+                const spotTime = document.getElementById('spotTime');
+                
+                if (data.live_data && data.live_data.spot) {
+                    const ltp = data.live_data.spot;
+                    spotLtp.textContent = `₹${ltp.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+                    
+                    if (data.pivots && data.pivots.prev_close) {
+                        const changePts = ltp - data.pivots.prev_close;
+                        const changePct = (changePts / data.pivots.prev_close) * 100;
+                        const sign = changePts >= 0 ? '+' : '';
+                        spotChange.textContent = `${sign}${changePts.toFixed(2)} (${sign}${changePct.toFixed(2)}%)`;
+                        spotChange.style.color = changePts >= 0 ? 'var(--success)' : 'var(--danger)';
+                    }
+                    spotTime.textContent = `Last update: ${data.last_update.split(' ')[1]}`;
+                } else {
+                    spotLtp.textContent = '-';
+                    spotChange.textContent = '-%';
+                    spotChange.style.color = 'var(--text-dark)';
+                }
+
+                // Update Option Buying (BASE) Metrics and Card
+                const buyPnl = document.getElementById('buyPnl');
+                const buySymbol = document.getElementById('buySymbol');
+                const buyPnlPts = document.getElementById('buyPnlPts');
+                
+                const buyStatusBadge = document.getElementById('buyStatusBadge');
+                const buyStatusText = document.getElementById('buyStatusText');
+                const buyStatusDesc = document.getElementById('buyStatusDesc');
+                
+                const buyActiveSymbol = document.getElementById('buyActiveSymbol');
+                const buyEntryDetails = document.getElementById('buyEntryDetails');
+                const buyTargetDetails = document.getElementById('buyTargetDetails');
+                const buySLDetails = document.getElementById('buySLDetails');
+                
+                const buyDistanceIndicators = document.getElementById('buyDistanceIndicators');
+                const buyTargetFill = document.getElementById('buyTargetFill');
+                const buyTargetDistText = document.getElementById('buyTargetDistText');
+                const buySLFill = document.getElementById('buySLFill');
+                const buySLDistText = document.getElementById('buySLDistText');
+                
+                const buyPnlText = document.getElementById('buyPnlText');
+
+                if (data.buying) {
+                    const buyData = data.buying;
+                    const pnlRs = buyData.pnl_rs || 0.0;
+                    const pnlPts = buyData.pnl_pts || 0.0;
+                    const formattedPnl = `${pnlRs >= 0 ? '+' : ''}₹${pnlRs.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+                    
+                    // Update Buy Badge & Description
+                    if (buyStatusBadge && buyStatusText && buyStatusDesc) {
+                        buyStatusBadge.className = `status-badge status-${buyData.status}`;
+                        buyStatusText.textContent = buyData.status.replace('_', ' ');
+                        buyStatusDesc.textContent = buyData.status_desc;
+                    }
+                    
+                    // Update metrics
+                    if (buyData.in_trade || buyData.exit_price !== null) {
+                        buyPnl.textContent = formattedPnl;
+                        buyPnl.style.color = pnlRs >= 0 ? 'var(--success)' : 'var(--danger)';
+                        
+                        buySymbol.textContent = `${buyData.symbol || 'BASE'} (${buyData.opt_type || '-'})`;
+                        buySymbol.style.color = 'var(--text-main)';
+                        
+                        buyPnlPts.textContent = `${pnlPts >= 0 ? '+' : ''}${pnlPts.toFixed(2)} pts`;
+                        buyPnlPts.style.color = pnlPts >= 0 ? 'var(--success)' : 'var(--danger)';
+                        
+                        buyPnlText.textContent = formattedPnl;
+                        buyPnlText.style.color = pnlRs >= 0 ? 'var(--success)' : 'var(--danger)';
+                    } else {
+                        buyPnl.textContent = '₹0.00';
+                        buyPnl.style.color = 'var(--text-muted)';
+                        buySymbol.textContent = 'No active trade';
+                        buySymbol.style.color = 'var(--text-dark)';
+                        buyPnlPts.textContent = '0.00 pts';
+                        buyPnlPts.style.color = 'var(--text-dark)';
+                        
+                        buyPnlText.textContent = '₹0.00';
+                        buyPnlText.style.color = 'var(--text-dark)';
+                    }
+                    
+                    // Update active strategy panel details
+                    if (buyData.symbol) {
+                        buyActiveSymbol.textContent = `${buyData.symbol} (${buyData.opt_type})`;
+                        buyEntryDetails.textContent = `₹${buyData.entry_price ? buyData.entry_price.toFixed(2) : '-'} @ ${buyData.entry_time || '-'}`;
+                        buyTargetDetails.textContent = buyData.target_spot ? buyData.target_spot.toFixed(2) : '-';
+                        buySLDetails.textContent = buyData.sl_spot ? buyData.sl_spot.toFixed(2) : '-';
+                        
+                        // Distance indicators
+                        if (buyData.in_trade && data.live_data && data.live_data.spot && buyData.target_spot && buyData.sl_spot) {
+                            buyDistanceIndicators.style.display = 'block';
+                            
+                            const spot = data.live_data.spot;
+                            const toTarget = buyData.to_target || 0.0;
+                            const toSL = buyData.to_sl || 0.0;
+                            
+                            buyTargetDistText.textContent = `To Target: ${toTarget > 0 ? '+' : ''}${toTarget.toFixed(2)} pts (Spot: ${spot.toFixed(2)} / Tgt: ${buyData.target_spot.toFixed(2)})`;
+                            buySLDistText.textContent = `To SL: ${toSL > 0 ? '+' : ''}${toSL.toFixed(2)} pts (Spot: ${spot.toFixed(2)} / SL: ${buyData.sl_spot.toFixed(2)})`;
+                            
+                            // Visual percentage fills
+                            const totalTargetRange = Math.abs(buyData.target_spot - buyData.sl_spot);
+                            if (totalTargetRange > 0) {
+                                let tgtPct = 0;
+                                let slPct = 0;
+                                if (buyData.opt_type === 'CE') {
+                                    tgtPct = ((spot - buyData.sl_spot) / totalTargetRange) * 100;
+                                    slPct = ((buyData.target_spot - spot) / totalTargetRange) * 100;
+                                } else {
+                                    tgtPct = ((buyData.sl_spot - spot) / totalTargetRange) * 100;
+                                    slPct = ((spot - buyData.target_spot) / totalTargetRange) * 100;
+                                }
+                                buyTargetFill.style.width = `${Math.max(0, Math.min(100, tgtPct))}%`;
+                                buySLFill.style.width = `${Math.max(0, Math.min(100, slPct))}%`;
+                            }
+                        } else {
+                            buyDistanceIndicators.style.display = 'none';
+                        }
+                    } else {
+                        buyActiveSymbol.textContent = '-';
+                        buyEntryDetails.textContent = '-';
+                        buyTargetDetails.textContent = '-';
+                        buySLDetails.textContent = '-';
+                        buyDistanceIndicators.style.display = 'none';
+                    }
+                }
+
+                // Update Option Selling (Strangle) Metrics and Card
+                const sellPnl = document.getElementById('sellPnl');
+                const sellSymbol = document.getElementById('sellSymbol');
+                const sellPnlPts = document.getElementById('sellPnlPts');
+                
+                const sellStatusBadge = document.getElementById('sellStatusBadge');
+                const sellStatusText = document.getElementById('sellStatusText');
+                const sellStatusDesc = document.getElementById('sellStatusDesc');
+                
+                const sellCeDetails = document.getElementById('sellCeDetails');
+                const sellPeDetails = document.getElementById('sellPeDetails');
+                const sellEntryTime = document.getElementById('sellEntryTime');
+                const sellSlTrigger = document.getElementById('sellSlTrigger');
+                
+                const sellSLProgressContainer = document.getElementById('sellSLProgressContainer');
+                const sellSLProgressFill = document.getElementById('sellSLProgressFill');
+                const sellSLProgressText = document.getElementById('sellSLProgressText');
+                
+                const sellPnlText = document.getElementById('sellPnlText');
+
+                if (data.selling) {
+                    const sellData = data.selling;
+                    const pnlRs = sellData.pnl_rs || 0.0;
+                    const pnlPts = sellData.pnl_pts || 0.0;
+                    const formattedPnl = `${pnlRs >= 0 ? '+' : ''}₹${pnlRs.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+                    
+                    // Update Sell Badge & Description
+                    if (sellStatusBadge && sellStatusText && sellStatusDesc) {
+                        sellStatusBadge.className = `status-badge status-${sellData.status}`;
+                        sellStatusText.textContent = sellData.status.replace('_', ' ');
+                        sellStatusDesc.textContent = sellData.status_desc;
+                    }
+                    
+                    // Update metrics
+                    if (sellData.in_trade || sellData.ce_exit_price !== null) {
+                        sellPnl.textContent = formattedPnl;
+                        sellPnl.style.color = pnlRs >= 0 ? 'var(--success)' : 'var(--danger)';
+                        
+                        sellSymbol.textContent = `STRANGLE (${sellData.pe_strike || '-'}/${sellData.ce_strike || '-'})`;
+                        sellSymbol.style.color = 'var(--text-main)';
+                        
+                        sellPnlPts.textContent = `${pnlPts >= 0 ? '+' : ''}${pnlPts.toFixed(2)} pts`;
+                        sellPnlPts.style.color = pnlPts >= 0 ? 'var(--success)' : 'var(--danger)';
+                        
+                        sellPnlText.textContent = formattedPnl;
+                        sellPnlText.style.color = pnlRs >= 0 ? 'var(--success)' : 'var(--danger)';
+                    } else {
+                        sellPnl.textContent = '₹0.00';
+                        sellPnl.style.color = 'var(--text-muted)';
+                        sellSymbol.textContent = 'No active trade';
+                        sellSymbol.style.color = 'var(--text-dark)';
+                        sellPnlPts.textContent = '0.00 pts';
+                        sellPnlPts.style.color = 'var(--text-dark)';
+                        
+                        sellPnlText.textContent = '₹0.00';
+                        sellPnlText.style.color = 'var(--text-dark)';
+                    }
+                    
+                    // Update active strangle strategy panel details
+                    if (sellData.ce_symbol || sellData.pe_symbol) {
+                        const ceLtpVal = sellData.ce_ltp ? `₹${sellData.ce_ltp.toFixed(2)}` : 'Scanning';
+                        const peLtpVal = sellData.pe_ltp ? `₹${sellData.pe_ltp.toFixed(2)}` : 'Scanning';
+                        
+                        sellCeDetails.textContent = `${sellData.ce_strike || '-'} CE (Entry: ₹${sellData.ce_entry_price ? sellData.ce_entry_price.toFixed(2) : '-'} / LTP: ${ceLtpVal})`;
+                        sellPeDetails.textContent = `${sellData.pe_strike || '-'} PE (Entry: ₹${sellData.pe_entry_price ? sellData.pe_entry_price.toFixed(2) : '-'} / LTP: ${peLtpVal})`;
+                        sellEntryTime.textContent = sellData.entry_time || '-';
+                        sellSlTrigger.textContent = `-₹${(sellData.combined_sl || 7000.0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+                        
+                        // Combined SL Progress Tracker
+                        if (sellData.in_trade) {
+                            sellSLProgressContainer.style.display = 'block';
+                            const maxSL = sellData.combined_sl || 7000.0;
+                            
+                            if (pnlRs < 0) {
+                                const lossPct = (Math.abs(pnlRs) / maxSL) * 100;
+                                sellSLProgressFill.style.width = `${Math.min(100, lossPct)}%`;
+                                sellSLProgressText.textContent = `Combined Loss Limit: ₹${Math.abs(pnlRs).toFixed(2)} / ₹${maxSL.toFixed(2)} (${lossPct.toFixed(1)}%)`;
+                                
+                                if (lossPct > 75) {
+                                    sellSLProgressFill.style.backgroundColor = 'var(--danger)';
+                                } else if (lossPct > 40) {
+                                    sellSLProgressFill.style.backgroundColor = 'var(--warning)';
+                                } else {
+                                    sellSLProgressFill.style.backgroundColor = 'var(--primary)';
+                                }
+                            } else {
+                                sellSLProgressFill.style.width = '0%';
+                                sellSLProgressText.textContent = `In profit: +₹${pnlRs.toFixed(2)} (Limit: -₹${maxSL.toFixed(2)})`;
+                                sellSLProgressFill.style.backgroundColor = 'var(--success)';
+                            }
+                        } else {
+                            sellSLProgressContainer.style.display = 'none';
+                        }
+                    } else {
+                        sellCeDetails.textContent = '-';
+                        sellPeDetails.textContent = '-';
+                        sellEntryTime.textContent = '-';
+                        sellSlTrigger.textContent = '-';
+                        sellSLProgressContainer.style.display = 'none';
+                    }
+                }
+
+                // Update Gap info
+                const gapValue = document.getElementById('gapValue');
+                const gapOpen = document.getElementById('gapOpen');
+                const gapPrevClose = document.getElementById('gapPrevClose');
+                
+                if (data.gap && data.gap.gap_pts !== null) {
+                    const gap = data.gap.gap_pts;
+                    const sign = gap >= 0 ? '+' : '';
+                    gapValue.textContent = `${sign}${gap.toFixed(2)} pts`;
+                    gapValue.style.color = gap >= 0 ? 'var(--success)' : 'var(--danger)';
+                    
+                    gapOpen.textContent = `Open: ${data.gap.open_price.toFixed(2)}`;
+                    gapPrevClose.textContent = `Prev Close: ${data.gap.prev_close.toFixed(2)}`;
+                } else {
+                    gapValue.textContent = '-';
+                    gapValue.style.color = 'var(--text-muted)';
+                    gapOpen.textContent = 'Open: -';
+                    gapPrevClose.textContent = `Prev Close: ${data.pivots && data.pivots.prev_close ? data.pivots.prev_close.toFixed(2) : '-'}`;
+                }
+
+                // Update Pivots visual Gauge
+                const valS2 = document.getElementById('valS2');
+                const valS1 = document.getElementById('valS1');
+                const valP = document.getElementById('valP');
+                const valR1 = document.getElementById('valR1');
+                const valR2 = document.getElementById('valR2');
+                const pivotsDate = document.getElementById('pivotsDate');
+                
+                if (data.pivots && data.pivots.P !== null) {
+                    const pivots = data.pivots;
+                    valS2.textContent = pivots.S2.toFixed(1);
+                    valS1.textContent = pivots.S1.toFixed(1);
+                    valP.textContent = pivots.P.toFixed(1);
+                    valR1.textContent = pivots.R1.toFixed(1);
+                    valR2.textContent = pivots.R2.toFixed(1);
+                    pivotsDate.textContent = `Trading Date: ${data.date}`;
+                    
+                    // Position the live ltp dot
+                    const livePointer = document.getElementById('livePointer');
+                    const pointerVal = document.getElementById('pointerVal');
+                    
+                    if (data.live_data && data.live_data.spot) {
+                        const spot = data.live_data.spot;
+                        const min = pivots.S2;
+                        const max = pivots.R2;
+                        const range = max - min;
+                        
+                        if (range > 0) {
+                            let pct = ((spot - min) / range) * 100;
+                            pct = Math.max(0, Math.min(100, pct)); // clamp to 0-100%
+                            
+                            livePointer.style.left = `${pct}%`;
+                            livePointer.style.display = 'flex';
+                            pointerVal.textContent = spot.toFixed(2);
+                        } else {
+                            livePointer.style.display = 'none';
+                        }
+                    } else {
+                        livePointer.style.display = 'none';
+                    }
+                } else {
+                    valS2.textContent = '-';
+                    valS1.textContent = '-';
+                    valP.textContent = '-';
+                    valR1.textContent = '-';
+                    valR2.textContent = '-';
+                    pivotsDate.textContent = 'Trading Date: ----';
+                    document.getElementById('livePointer').style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error("Error fetching status:", error);
+            }
+        }
+
+        // Fetch Live Terminal Logs
+        async function fetchTerminal() {
+            try {
+                const response = await fetch('/api/terminal');
+                if (!response.ok) throw new Error("Terminal fetch failed");
+                const text = await response.ok ? await response.text() : "No terminal output";
+                
+                const terminal = document.getElementById('terminalLog');
+                const isScrolledToBottom = terminal.scrollHeight - terminal.clientHeight <= terminal.scrollTop + 50;
+                
+                // Color codes
+                let html = text
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    // Highlight warnings/errors
+                    .replace(/(WARN:|ERROR:)(.*)/g, '<span style="color:#f87171;font-weight:600;">$1$2</span>')
+                    // Highlight order details
+                    .replace(/(ORDER placed:|TRADE OPEN|TRADE CLOSED)/g, '<span style="color:#a78bfa;font-weight:700;">$1</span>')
+                    // Highlight SL/Targets
+                    .replace(/(TARGET HIT|SL HIT)/g, '<span style="color:#34d399;font-weight:700;">$1</span>')
+                    .replace(/(SIGNAL at)/g, '<span style="color:#38bdf8;font-weight:700;">$1</span>')
+                    .replace(/(NO TRADE)/g, '<span style="color:#9ca3af;font-weight:600;">$1</span>');
+                
+                terminal.innerHTML = html;
+                
+                if (isScrolledToBottom) {
+                    terminal.scrollTop = terminal.scrollHeight;
+                }
+            } catch (error) {
+                console.error("Error fetching terminal:", error);
+            }
+        }
+
+        // Fetch Historical Trade Logs CSV
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/api/logs');
+                if (!response.ok) throw new Error("Logs fetch failed");
+                const logs = await response.json();
+                
+                const body = document.getElementById('logsTableBody');
+                body.innerHTML = '';
+                
+                if (logs.length === 0) {
+                    body.innerHTML = `
+                        <tr>
+                            <td colspan="10" style="text-align: center; color: var(--text-dark); padding: 30px;">
+                                No trade executions recorded yet in paper_trade_log.csv
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                logs.forEach(row => {
+                    const dateFormatted = `${row.date.substring(0,4)}-${row.date.substring(4,6)}-${row.date.substring(6,8)}`;
+                    const pnlVal = parseFloat(row.pnl_rs);
+                    const pnlPts = parseFloat(row.pnl_pts);
+                    
+                    const pnlClass = pnlVal >= 0 ? 'pnl-gain' : 'pnl-loss';
+                    const pnlSign = pnlVal >= 0 ? '+' : '';
+                    
+                    let badgeClass = 'badge-eod';
+                    if (row.result === 'TARGET' || row.result === 'TGT') badgeClass = 'badge-target';
+                    else if (row.result === 'SL') badgeClass = 'badge-sl';
+                    
+                    let optTypeBadge = '';
+                    if (row.opt_type === 'CE') {
+                        optTypeBadge = `<span class="badge badge-target" style="padding: 1px 3px; font-size: 8px;">CE</span>`;
+                    } else if (row.opt_type === 'PE') {
+                        optTypeBadge = `<span class="badge badge-sl" style="padding: 1px 3px; font-size: 8px;">PE</span>`;
+                    } else {
+                        optTypeBadge = `<span class="badge badge-strangle" style="padding: 1px 3px; font-size: 8px;">STRANGLE</span>`;
+                    }
+                    
+                    const pVal = row.P ? parseFloat(row.P).toFixed(1) : '-';
+                    let tgtVal = '-';
+                    if (row.opt_type === 'CE' && row.R1) {
+                        tgtVal = parseFloat(row.R1).toFixed(1);
+                    } else if (row.opt_type === 'PE' && row.S1) {
+                        tgtVal = parseFloat(row.S1).toFixed(1);
+                    } else if (row.opt_type === 'STRANGLE') {
+                        tgtVal = 'Combined SL';
+                    }
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-weight: 500; font-family: var(--font-mono);">${dateFormatted}</td>
+                        <td style="font-weight: 600; font-size: 11px;">
+                            ${row.symbol} ${optTypeBadge}
+                        </td>
+                        <td>
+                            <div style="font-size:10px; color:var(--text-muted);">Signal: ${row.signal_time}</div>
+                            <div style="font-weight:500;">Entry: ${row.entry_time}</div>
+                        </td>
+                        <td style="font-family: var(--font-mono);">₹${parseFloat(row.entry_price).toFixed(2)}</td>
+                        <td>${row.exit_time}</td>
+                        <td style="font-family: var(--font-mono);">₹${parseFloat(row.exit_price).toFixed(2)}</td>
+                        <td><span class="badge ${badgeClass}">${row.result}</span></td>
+                        <td style="color:${parseFloat(row.gap) >= 0 ? 'var(--success)' : 'var(--danger)'}; font-family: var(--font-mono);">${parseFloat(row.gap) >= 0 ? '+' : ''}${parseFloat(row.gap).toFixed(1)}</td>
+                        <td>
+                            <div style="font-size:10px; color:var(--text-muted); font-family: var(--font-mono);">P: ${pVal}</div>
+                            <div style="font-size:10px; color:var(--text-muted); font-family: var(--font-mono);">Tgt: ${tgtVal}</div>
+                        </td>
+                        <td>
+                            <span class="pnl-tag ${pnlClass}">
+                                ${pnlSign}₹${pnlVal.toLocaleString('en-IN', {minimumFractionDigits: 2})}
+                                <div style="font-size: 9px; font-weight: 500; text-align: right; opacity: 0.8;">
+                                    ${pnlSign}${pnlPts.toFixed(2)} pts
+                                </div>
+                            </span>
+                        </td>
+                    `;
+                    body.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Error fetching logs:", error);
+            }
+        }
+
+        // Fetch Dynamic Config
+        async function fetchConfig() {
+            try {
+                const response = await fetch('/api/config');
+                if (!response.ok) throw new Error("Config fetch failed");
+                const config = await response.json();
+                
+                // Populate form fields
+                document.getElementById('OPENALGO_API_KEY').value = config.OPENALGO_API_KEY;
+                document.getElementById('LOT_SIZE').value = config.LOT_SIZE;
+                document.getElementById('GAP_THRESH').value = config.GAP_THRESH;
+                document.getElementById('P_TOL').value = config.P_TOL;
+                document.getElementById('SL_PTS').value = config.SL_PTS;
+                document.getElementById('ENTRY_CUTOFF').value = config.ENTRY_CUTOFF;
+                document.getElementById('EOD_EXIT').value = config.EOD_EXIT;
+                document.getElementById('OPENALGO_HOST').value = config.OPENALGO_HOST;
+                document.getElementById('PAPER_TRADE').value = config.PAPER_TRADE ? "true" : "false";
+            } catch (error) {
+                console.error("Error fetching config:", error);
+            }
+        }
+
+        // Save Configuration to config.json
+        async function saveConfig() {
+            const config = {
+                OPENALGO_API_KEY: document.getElementById('OPENALGO_API_KEY').value,
+                LOT_SIZE: parseInt(document.getElementById('LOT_SIZE').value),
+                GAP_THRESH: parseFloat(document.getElementById('GAP_THRESH').value),
+                P_TOL: parseFloat(document.getElementById('P_TOL').value),
+                SL_PTS: parseFloat(document.getElementById('SL_PTS').value),
+                ENTRY_CUTOFF: document.getElementById('ENTRY_CUTOFF').value,
+                EOD_EXIT: document.getElementById('EOD_EXIT').value,
+                OPENALGO_HOST: document.getElementById('OPENALGO_HOST').value,
+                PAPER_TRADE: document.getElementById('PAPER_TRADE').value === "true"
+            };
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                
+                const resData = await response.json();
+                if (response.ok && resData.success) {
+                    showToast("Configuration saved successfully", "success");
+                } else {
+                    showToast(`Error: ${resData.message}`, "error");
+                }
+            } catch (error) {
+                showToast(`Network Error saving config: ${error}`, "error");
+            }
+        }
+
+        // Start / Stop control operations
+        async function controlScanner(action) {
+            try {
+                const response = await fetch('/api/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action })
+                });
+                
+                const resData = await response.json();
+                if (response.ok && resData.success) {
+                    showToast(resData.message, action === 'start' ? 'success' : 'info');
+                    
+                    // Quick state update
+                    setTimeout(fetchStatus, 300);
+                    setTimeout(fetchTerminal, 300);
+                    setTimeout(fetchLogs, 1000);
+                } else {
+                    showToast(`Control Error: ${resData.message}`, "error");
+                }
+            } catch (error) {
+                showToast(`Network Error: ${error}`, "error");
+            }
+        }
+
+        // Initial setup and polling loops
+        async function init() {
+            await fetchConfig();
+            await fetchStatus();
+            await fetchTerminal();
+            await fetchLogs();
+
+            // Status Polling Loop - 1.5 seconds
+            setInterval(fetchStatus, 1500);
+
+            // Terminal Polling Loop - 3 seconds
+            setInterval(fetchTerminal, 3000);
+
+            // Logs Polling Loop - 10 seconds
+            setInterval(fetchLogs, 10000);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
