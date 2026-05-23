@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NiftyAgent — Prop Desk Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0a0c10;
+  --bg2:      #0f1218;
+  --bg3:      #141820;
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.13);
+  --green:    #00d97e;
+  --green-dim:#00d97e33;
+  --red:      #ff4d6d;
+  --red-dim:  #ff4d6d33;
+  --amber:    #ffb30f;
+  --amber-dim:#ffb30f33;
+  --blue:     #4a9eff;
+  --blue-dim: #4a9eff22;
+  --text:     #e8eaf0;
+  --muted:    #5a6070;
+  --mono:     'JetBrains Mono', monospace;
+  --sans:     'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* GRID LAYOUT */
+.root {
+  display: grid;
+  grid-template-rows: 52px 1fr;
+  grid-template-columns: 240px 1fr 280px;
+  grid-template-areas:
+    "header header header"
+    "sidebar main panel";
+  height: 100vh;
+  gap: 0;
+}
+
+/* HEADER */
+header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.logo {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.time-display { font-weight: 500; color: var(--text); letter-spacing: .05em; }
+.status-pill {
+  padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 500;
+  display: flex; align-items: center; gap: 5px;
+}
+.status-pill.live  { background: var(--green-dim); color: var(--green); }
+.status-pill.paper { background: var(--amber-dim); color: var(--amber); }
+.status-pill.off   { background: var(--red-dim);   color: var(--red); }
+.status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+/* SIDEBAR */
+.sidebar {
+  grid-area: sidebar;
+  border-right: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+}
+.sb-section { border-bottom: 1px solid var(--border); padding: 16px; }
+.sb-label {
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  font-family: var(--sans);
+}
+.sb-metric { margin-bottom: 10px; }
+.sb-metric-label { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+.sb-metric-val { font-size: 18px; font-weight: 700; font-family: var(--sans); }
+.green { color: var(--green); }
+.red   { color: var(--red); }
+.amber { color: var(--amber); }
+.blue  { color: var(--blue); }
+
+.regime-box {
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.regime-box.A { background: var(--green-dim); border: 1px solid var(--green)33; }
+.regime-box.B { background: var(--amber-dim); border: 1px solid var(--amber)33; }
+.regime-box.C { background: var(--red-dim);   border: 1px solid var(--red)33; }
+.regime-box.X { background: var(--bg3);       border: 1px solid var(--border); }
+.regime-label { font-family: var(--sans); font-size: 14px; font-weight: 700; }
+.regime-sub   { font-size: 10px; color: var(--muted); }
+
+/* CONTROL BUTTONS */
+.btn {
+  width: 100%; padding: 9px 12px; border-radius: 6px; border: 1px solid var(--border2);
+  background: var(--bg3); color: var(--text); font-family: var(--mono); font-size: 12px;
+  cursor: pointer; margin-bottom: 6px; text-align: left;
+  transition: all .15s; display: flex; align-items: center; gap: 8px;
+}
+.btn:hover { background: var(--bg); border-color: var(--border2); }
+.btn.danger { border-color: var(--red)44; color: var(--red); }
+.btn.danger:hover { background: var(--red-dim); }
+.btn.approve { border-color: var(--green)44; color: var(--green); }
+.btn.approve:hover { background: var(--green-dim); }
+
+/* MAIN AREA */
+.main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+/* CARDS */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.card-title {
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  font-family: var(--sans);
+}
+
+/* POSITION CARD */
+.position-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.pos-item {}
+.pos-item-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+.pos-item-val   { font-size: 14px; font-weight: 500; }
+
+.pnl-big {
+  font-family: var(--sans);
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  margin: 8px 0 4px;
+}
+
+/* SIGNAL CARD */
+.signal-box {
+  border-radius: 6px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+.signal-box.buy  { border-color: var(--green)55; background: var(--green-dim); }
+.signal-box.sell { border-color: var(--red)55;   background: var(--red-dim); }
+.signal-box.wait { border-color: var(--border);  background: var(--bg3); }
+.signal-type { font-family: var(--sans); font-size: 22px; font-weight: 800; }
+.conf-bar { height: 3px; background: var(--bg); border-radius: 99px; margin: 8px 0; overflow: hidden; }
+.conf-fill { height: 100%; border-radius: 99px; transition: width .5s; }
+
+/* LOG */
+.log-area {
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 10px 12px;
+  height: 160px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.log-line { color: var(--muted); }
+.log-line.INFO  { color: var(--blue); }
+.log-line.WARN  { color: var(--amber); }
+.log-line.ERROR { color: var(--red); }
+.log-line.TRADE { color: var(--green); }
+
+/* RIGHT PANEL */
+.panel {
+  grid-area: panel;
+  border-left: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.panel-section { border-bottom: 1px solid var(--border); padding: 14px; }
+.p-label {
+  font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px; font-family: var(--sans);
+}
+
+/* CHECKS */
+.check-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 0; font-size: 11px;
+  border-bottom: 1px solid var(--border);
+}
+.check-row:last-child { border-bottom: none; }
+.check-icon { width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
+.ck-pass { background: var(--green-dim); color: var(--green); }
+.ck-fail { background: var(--red-dim);   color: var(--red); }
+.ck-wait { background: var(--bg3);       color: var(--muted); border: 1px solid var(--border); }
+.ck-label { flex: 1; color: var(--muted); }
+.ck-val   { color: var(--text); font-size: 10px; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* TRADE LOG TABLE */
+.trade-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.trade-table th { color: var(--muted); font-weight: 400; text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); }
+.trade-table td { padding: 5px 6px; border-bottom: 1px solid var(--border); color: var(--text); }
+.trade-table tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<div class="root">
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    NiftyAgent
+    <span style="color:var(--muted);font-weight:400;font-size:12px">/ prop desk terminal</span>
+  </div>
+  <div class="header-meta">
+    <span id="nifty-spot" style="color:var(--text);font-weight:500">NIFTY —</span>
+    <span id="vix-val">VIX —</span>
+    <span class="time-display" id="clock">--:--:--</span>
+    <span class="status-pill paper" id="status-pill">
+      <span class="status-dot"></span>
+      <span id="status-text">PAPER</span>
+    </span>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-section">
+    <div class="sb-label">Capital</div>
+    <div class="sb-metric">
+      <div class="sb-metric-label">Available margin</div>
+      <div class="sb-metric-val green" id="avail-margin">₹ —</div>
+    </div>
+    <div class="sb-metric">
+      <div class="sb-metric-label">Used margin</div>
+      <div class="sb-metric-val" id="used-margin">₹ —</div>
+    </div>
+    <div class="sb-metric">
+      <div class="sb-metric-label">Daily P&L</div>
+      <div class="sb-metric-val" id="daily-pnl">₹ 0</div>
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Regime</div>
+    <div class="regime-box X" id="regime-box">
+      <div>
+        <div class="regime-label" id="regime-label">—</div>
+        <div class="regime-sub" id="regime-desc">Waiting for scan</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted)">
+      Trades today: <span id="trades-today" style="color:var(--text)">0</span> / 3
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Controls</div>
+    <button class="btn approve" onclick="approveBuy()">▶ Approve Buy Signal</button>
+    <button class="btn danger" onclick="emergencyExit()">⚠ Emergency Exit</button>
+    <button class="btn danger" onclick="stopAgent()">■ Stop Agent</button>
+  </div>
+
+  <div class="sb-section" style="flex:1">
+    <div class="sb-label">Next Expiry</div>
+    <div id="next-expiry" style="font-size:14px;font-weight:500;color:var(--blue)">—</div>
+    <div id="days-to-expiry" style="font-size:11px;color:var(--muted);margin-top:4px">— days remaining</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- ACTIVE POSITION -->
+  <div class="card" id="position-card">
+    <div class="card-title">Active position</div>
+    <div id="no-position" style="color:var(--muted);font-size:12px;padding:8px 0">
+      No open position — bot waiting for valid setup
+    </div>
+    <div id="position-detail" style="display:none">
+      <div class="pnl-big" id="pnl-display">₹ 0</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">unrealised P&L</div>
+      <div class="position-grid">
+        <div class="pos-item">
+          <div class="pos-item-label">CE Strike (sold)</div>
+          <div class="pos-item-val red" id="ce-strike">—</div>
+        </div>
+        <div class="pos-item">
+          <div class="pos-item-label">PE Strike (sold)</div>
+          <div class="pos-item-val green" id="pe-strike">—</div>
+        </div>
+        <div class="pos-item">
+          <div class="pos-item-label">Premium collected</div>
+          <div class="pos-item-val" id="premium-rcv">—</div>
+        </div>
+        <div class="pos-item">
+          <div class="pos-item-label">Profit target</div>
+          <div class="pos-item-val green" id="pos-target">—</div>
+        </div>
+        <div class="pos-item">
+          <div class="pos-item-label">Stop loss</div>
+          <div class="pos-item-val red" id="pos-sl">—</div>
+        </div>
+        <div class="pos-item">
+          <div class="pos-item-label">Entry time</div>
+          <div class="pos-item-val" id="entry-time">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISION SIGNAL -->
+  <div class="card">
+    <div class="card-title">GoCharting Vision — Orderflow signal</div>
+    <div id="signal-box" class="signal-box wait">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="signal-type" id="signal-type">WAIT</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px" id="signal-reason">Scanning orderflow...</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:22px;font-weight:700;font-family:var(--sans)" id="signal-conf">—</div>
+          <div style="font-size:10px;color:var(--muted)">confidence</div>
+        </div>
+      </div>
+      <div class="conf-bar">
+        <div class="conf-fill" id="conf-fill" style="width:0%;background:var(--muted)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;font-size:11px">
+        <div><span style="color:var(--muted)">Setup: </span><span id="sig-setup">—</span></div>
+        <div><span style="color:var(--muted)">Entry: </span><span id="sig-entry">—</span></div>
+        <div><span style="color:var(--muted)">SL: </span><span id="sig-sl">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE LOG -->
+  <div class="card">
+    <div class="card-title">Agent log — live</div>
+    <div class="log-area" id="log-area">
+      <div class="log-line INFO">[09:15:00] Agent initialized. Paper trade mode.</div>
+      <div class="log-line">[09:15:01] AngelOne login successful.</div>
+      <div class="log-line">[09:15:02] Scrip master loaded — 47 NIFTY expiries found.</div>
+      <div class="log-line INFO">[09:15:03] Dashboard running at http://localhost:8080</div>
+      <div class="log-line">[09:15:04] Waiting for morning scan at 09:15...</div>
+    </div>
+  </div>
+
+  <!-- TRADE HISTORY -->
+  <div class="card">
+    <div class="card-title">Today's trades</div>
+    <table class="trade-table">
+      <thead>
+        <tr>
+          <th>Time</th><th>Type</th><th>Strikes</th><th>Premium</th><th>Exit</th><th>P&L</th>
+        </tr>
+      </thead>
+      <tbody id="trade-log">
+        <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:16px">No trades yet today</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- RIGHT PANEL -->
+<aside class="panel">
+
+  <div class="panel-section">
+    <div class="p-label">Setup checks</div>
+    <div id="checks-list">
+      <div class="check-row"><div class="check-icon ck-wait">?</div><div class="ck-label">VIX range (13–20)</div><div class="ck-val" id="chk-vix">—</div></div>
+      <div class="check-row"><div class="check-icon ck-wait">?</div><div class="ck-label">IV percentile &gt;40</div><div class="ck-val" id="chk-iv">—</div></div>
+      <div class="check-row"><div class="check-icon ck-wait">?</div><div class="ck-label">EMA trend flat</div><div class="ck-val" id="chk-ema">—</div></div>
+      <div class="check-row"><div class="check-icon ck-wait">?</div><div class="ck-label">PCR 0.8–1.4</div><div class="ck-val" id="chk-pcr">—</div></div>
+      <div class="check-row"><div class="check-icon ck-wait">?</div><div class="ck-label">Event calendar</div><div class="ck-val" id="chk-event">—</div></div>
+      <div class="check-row"><div class="check-icon ck-wait">?</div><div class="ck-label">Margin 120%+</div><div class="ck-val" id="chk-margin">—</div></div>
+      <div class="check-row"><div class="check-icon ck-wait">?</div><div class="ck-label">Daily loss gate</div><div class="ck-val" id="chk-gate">OK</div></div>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <div class="p-label">Risk meters</div>
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+        <span style="color:var(--muted)">Daily limit</span>
+        <span id="daily-limit-pct" style="color:var(--text)">0%</span>
+      </div>
+      <div style="height:4px;background:var(--bg);border-radius:99px;overflow:hidden">
+        <div id="daily-bar" style="height:100%;width:0%;background:var(--green);border-radius:99px;transition:width .5s"></div>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+        <span style="color:var(--muted)">Weekly limit</span>
+        <span id="weekly-limit-pct" style="color:var(--text)">0%</span>
+      </div>
+      <div style="height:4px;background:var(--bg);border-radius:99px;overflow:hidden">
+        <div id="weekly-bar" style="height:100%;width:0%;background:var(--green);border-radius:99px;transition:width .5s"></div>
+      </div>
+    </div>
+    <div style="font-size:11px;display:flex;flex-direction:column;gap:4px;margin-top:12px">
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">Daily P&L</span>
+        <span id="risk-daily">₹ 0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">Weekly P&L</span>
+        <span id="risk-weekly">₹ 0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">Max drawdown</span>
+        <span style="color:var(--red)" id="max-dd">₹ 0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-section" style="flex:1">
+    <div class="p-label">Market data</div>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:11px">
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">Nifty Spot</span>
+        <span id="md-spot" style="font-weight:500">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">India VIX</span>
+        <span id="md-vix">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">PCR</span>
+        <span id="md-pcr">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">IV (ATM)</span>
+        <span id="md-iv">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">ATR (15m)</span>
+        <span id="md-atr">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">Net Delta</span>
+        <span id="md-delta">—</span>
+      </div>
+    </div>
+  </div>
+
+</aside>
+</div>
+
+<script>
+// ── Clock ──
+function updateClock() {
+  const n = new Date();
+  document.getElementById("clock").textContent =
+    n.toLocaleTimeString("en-IN", {hour12: false});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Format ──
+const fmt = v => v >= 0
+  ? `<span style="color:var(--green)">+₹${v.toLocaleString("en-IN", {maximumFractionDigits:0})}</span>`
+  : `<span style="color:var(--red)">-₹${Math.abs(v).toLocaleString("en-IN", {maximumFractionDigits:0})}</span>`;
+
+// ── Poll /api/state every 3 seconds ──
+async function poll() {
+  try {
+    const r = await fetch("/api/state");
+    const d = await r.json();
+    applyState(d);
+  } catch(e) {
+    // server not running in preview — use demo data
+    applyState(demoState());
+  }
+}
+
+function applyState(d) {
+  // Regime
+  const rm = d.regime || "—";
+  const rbox = document.getElementById("regime-box");
+  rbox.className = "regime-box " + (rm || "X");
+  document.getElementById("regime-label").textContent = rm === "--" ? "—" : `Regime ${rm}`;
+  document.getElementById("regime-desc").textContent = {
+    A: "Sideways — full size", B: "Mild trend — reduced", C: "High vol — NO TRADE", "—": "Waiting for scan"
+  }[rm] || "Scanning...";
+
+  // Trades
+  document.getElementById("trades-today").textContent = d.trades_today || 0;
+
+  // P&L
+  const pnl = d.daily_pnl || 0;
+  const pnlEl = document.getElementById("daily-pnl");
+  pnlEl.innerHTML = fmt(pnl);
+  document.getElementById("pnl-display").innerHTML = fmt(pnl);
+
+  // Funds
+  if (d.funds) {
+    document.getElementById("avail-margin").textContent = "₹" + Math.round(d.funds.available_cash / 1000) + "K";
+    document.getElementById("used-margin").textContent  = "₹" + Math.round(d.funds.used_margin / 1000) + "K";
+  }
+
+  // Position
+  const hasPOS = d.active_position && d.position_detail;
+  document.getElementById("no-position").style.display    = hasPOS ? "none" : "block";
+  document.getElementById("position-detail").style.display = hasPOS ? "block" : "none";
+  if (hasPOS) {
+    const p = d.position_detail;
+    document.getElementById("ce-strike").textContent     = p.ce_strike || "—";
+    document.getElementById("pe-strike").textContent     = p.pe_strike || "—";
+    document.getElementById("premium-rcv").textContent   = p.premium_received ? "₹" + p.premium_received.toFixed(1) : "—";
+    document.getElementById("pos-target").textContent    = p.target ? "+₹" + p.target.toFixed(0) : "—";
+    document.getElementById("pos-sl").textContent        = p.sl ? "-₹" + p.sl.toFixed(0) : "—";
+    document.getElementById("entry-time").textContent    = p.entry_time ? p.entry_time.split("T")[1]?.slice(0,8) : "—";
+  }
+
+  // Vision signal
+  const sig = d.last_signal;
+  if (sig) {
+    const sbox = document.getElementById("signal-box");
+    sbox.className = "signal-box " + (sig.signal || "wait").toLowerCase();
+    document.getElementById("signal-type").textContent = sig.signal || "WAIT";
+    document.getElementById("signal-reason").textContent = sig.reason || "—";
+    const conf = sig.confidence || 0;
+    document.getElementById("signal-conf").textContent = conf + "%";
+    const fill = document.getElementById("conf-fill");
+    fill.style.width = conf + "%";
+    fill.style.background = conf > 75 ? "var(--green)" : conf > 50 ? "var(--amber)" : "var(--muted)";
+    document.getElementById("sig-setup").textContent = sig.setup_type || "—";
+    document.getElementById("sig-entry").textContent = sig.approx_entry || "—";
+    document.getElementById("sig-sl").textContent    = sig.approx_sl || "—";
+  }
+
+  // Risk bars
+  const dailyPct = Math.min(100, Math.abs(pnl) / 45000 * 100);
+  document.getElementById("daily-bar").style.width   = dailyPct + "%";
+  document.getElementById("daily-bar").style.background = dailyPct > 80 ? "var(--red)" : dailyPct > 50 ? "var(--amber)" : "var(--green)";
+  document.getElementById("daily-limit-pct").textContent = dailyPct.toFixed(0) + "%";
+  document.getElementById("risk-daily").innerHTML = fmt(pnl);
+
+  // Status
+  const sp = document.getElementById("status-pill");
+  const st = document.getElementById("status-text");
+  if (d.bot_running) {
+    sp.className = "status-pill paper";
+    st.textContent = "PAPER";
+  } else {
+    sp.className = "status-pill off";
+    st.textContent = "STOPPED";
+  }
+}
+
+// Demo state for preview (when Flask not running)
+function demoState() {
+  const pnl = 8420;
+  return {
+    regime: "A",
+    trades_today: 1,
+    daily_pnl: pnl,
+    bot_running: true,
+    active_position: true,
+    position_detail: {
+      ce_strike: 24500, pe_strike: 24100,
+      premium_received: 142.5,
+      target: 71.25, sl: 285.0,
+      entry_time: "2026-03-25T09:35:22"
+    },
+    last_signal: {
+      signal: "WAIT", confidence: 44,
+      reason: "No clear imbalance visible",
+      setup_type: "—", approx_entry: null, approx_sl: null
+    },
+    funds: { available_cash: 870000, used_margin: 230000 }
+  };
+}
+
+// ── Log fetcher ──
+async function fetchLogs() {
+  try {
+    const r = await fetch("/api/logs");
+    const d = await r.json();
+    const area = document.getElementById("log-area");
+    area.innerHTML = d.lines.map(l => {
+      const cls = l.includes("[INFO]") ? "INFO" : l.includes("[WARN]") ? "WARN" : l.includes("[ERROR]") ? "ERROR" : "";
+      return `<div class="log-line ${cls}">${l.trim()}</div>`;
+    }).join("");
+    area.scrollTop = area.scrollHeight;
+  } catch {}
+}
+
+// ── Controls ──
+async function stopAgent() {
+  if (!confirm("Stop the agent?")) return;
+  await fetch("/api/stop", {method:"POST"});
+}
+async function emergencyExit() {
+  if (!confirm("Emergency exit all positions?")) return;
+  await fetch("/api/emergency_exit", {method:"POST"});
+}
+async function approveBuy() {
+  const r = await fetch("/api/approve_buy", {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"});
+  const d = await r.json();
+  alert(d.msg);
+}
+
+// ── Start polling ──
+poll();
+setInterval(poll, 3000);
+setInterval(fetchLogs, 10000);
+</script>
+</body>
+</html>
