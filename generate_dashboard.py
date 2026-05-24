@@ -1154,11 +1154,24 @@ html_code = """<!DOCTYPE html>
                         <span style="font-size:13px; font-weight:600; color:var(--muted)">Allocation Mode:</span>
                         <div style="display:flex; gap:15px;">
                             <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; color:var(--cyan); font-weight:600;" id="auto-label">
-                                <input type="radio" name="alloc-mode" value="auto" checked onchange="toggleAllocMode('auto')"> Auto (Risk-Adjusted ERC)
+                                <input type="radio" name="alloc-mode" value="auto" checked onchange="toggleAllocMode('auto')"> Auto Presets
                             </label>
                             <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; color:var(--muted); font-weight:600;" id="manual-label">
                                 <input type="radio" name="alloc-mode" value="manual" onchange="toggleAllocMode('manual')"> Manual Custom
                             </label>
+                        </div>
+                    </div>
+
+                    <!-- Auto Presets Selector -->
+                    <div id="presets-panel" class="control-group" style="display:flex; flex-direction:column; gap:8px; padding:10px 16px; margin-bottom: 8px; border-top: 1px dashed var(--border); padding-top: 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:11px; font-weight:600; color:var(--muted)">Auto Preset Profile:</span>
+                            <span id="preset-badge" style="font-size:9px; font-family:var(--mono); color:var(--cyan); background:rgba(0,255,204,0.1); padding:2px 6px; border-radius:3px; font-weight:700;">MAX SHARPE</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;">
+                            <button id="preset-btn-sharpe" onclick="switchPreset('sharpe')" style="background:rgba(0,255,204,0.15); color:var(--cyan); border:1px solid var(--cyan); padding:5px; border-radius:5px; font-size:10px; font-weight:700; cursor:pointer; transition:all 0.2s;" title="Risk-Adjusted Max Sharpe ERC">Max Sharpe</button>
+                            <button id="preset-btn-min-vol" onclick="switchPreset('min_vol')" style="background:rgba(0,0,0,0.5); color:var(--muted); border:1px solid var(--border); padding:5px; border-radius:5px; font-size:10px; font-weight:600; cursor:pointer; transition:all 0.2s;" title="Inverse Volatility Drawdown Prioritized">Min Volatility</button>
+                            <button id="preset-btn-equal" onclick="switchPreset('equal')" style="background:rgba(0,0,0,0.5); color:var(--muted); border:1px solid var(--border); padding:5px; border-radius:5px; font-size:10px; font-weight:600; cursor:pointer; transition:all 0.2s;" title="Simple Equal Weight Capital Split">Equal Weight</button>
                         </div>
                     </div>
 
@@ -1624,6 +1637,7 @@ html_code = """<!DOCTYPE html>
         
         // Manual Custom allocations
         let allocationMode = 'auto';
+        let selectedPreset = 'sharpe'; // 'sharpe', 'min_vol', 'equal'
         const strategyWeights = {};
         const strategyMargins = {};
         const strategyLotSizes = {};
@@ -1691,11 +1705,67 @@ html_code = """<!DOCTYPE html>
             selectLedgerStrategy(currentLedgerStrategy);
         }
 
+        // Helper to calculate auto weight for a strategy based on active preset
+        function getAutoWeightMetric(st) {
+            let metric = 1.0;
+            if (selectedPreset === 'sharpe') {
+                const ddCap = Math.max(st.DrawdownPct, 1.0);
+                metric = st.AnnualizedReturn / ddCap;
+                const corrPenalty = Math.max(0.2, 1.0 - st.CorrelationScore);
+                metric = metric * corrPenalty;
+            } else if (selectedPreset === 'min_vol') {
+                const ddCap = Math.max(st.DrawdownPct, 1.0);
+                metric = 1.0 / Math.pow(ddCap, 2);
+            } else if (selectedPreset === 'equal') {
+                metric = 1.0;
+            }
+            return metric;
+        }
+
+        // Switch Auto Preset Profile
+        function switchPreset(presetName) {
+            selectedPreset = presetName;
+            
+            const btnSharpe = document.getElementById('preset-btn-sharpe');
+            const btnMinVol = document.getElementById('preset-btn-min-vol');
+            const btnEqual = document.getElementById('preset-btn-equal');
+            const badge = document.getElementById('preset-badge');
+            
+            const inactiveStyle = "background:rgba(0,0,0,0.5); color:var(--muted); border:1px solid var(--border); font-weight:600; padding:5px; border-radius:5px; font-size:10px; cursor:pointer; transition:all 0.2s;";
+            const activeStyle = "background:rgba(0,255,204,0.15); color:var(--cyan); border:1px solid var(--cyan); font-weight:700; padding:5px; border-radius:5px; font-size:10px; cursor:pointer; transition:all 0.2s;";
+            
+            btnSharpe.style.cssText = presetName === 'sharpe' ? activeStyle : inactiveStyle;
+            btnMinVol.style.cssText = presetName === 'min_vol' ? activeStyle : inactiveStyle;
+            btnEqual.style.cssText = presetName === 'equal' ? activeStyle : inactiveStyle;
+            
+            if (presetName === 'sharpe') {
+                badge.textContent = "MAX SHARPE";
+                badge.style.color = "var(--cyan)";
+                badge.style.background = "rgba(0,255,204,0.1)";
+            } else if (presetName === 'min_vol') {
+                badge.textContent = "MIN VOLATILITY";
+                badge.style.color = "var(--emerald)";
+                badge.style.background = "rgba(0,230,118,0.1)";
+            } else if (presetName === 'equal') {
+                badge.textContent = "EQUAL WEIGHT";
+                badge.style.color = "var(--muted)";
+                badge.style.background = "rgba(255,255,255,0.05)";
+            }
+            
+            renderStrategySelector();
+            runSimulation();
+        }
+
         // Toggle Alloc Mode
         function toggleAllocMode(mode) {
             allocationMode = mode;
             document.getElementById('auto-label').style.color = mode === 'auto' ? 'var(--cyan)' : 'var(--muted)';
             document.getElementById('manual-label').style.color = mode === 'manual' ? 'var(--cyan)' : 'var(--muted)';
+            
+            const presetsPanel = document.getElementById('presets-panel');
+            if (presetsPanel) {
+                presetsPanel.style.display = mode === 'auto' ? 'flex' : 'none';
+            }
             
             // Pre-fill manual capitals with current auto-allocated capitals when switching
             if (mode === 'manual') {
@@ -1704,10 +1774,7 @@ html_code = """<!DOCTYPE html>
                 
                 activeStrategies.forEach(name => {
                     const s = DATASET.strategies.find(st => st.name === name);
-                    const ddCap = Math.max(s.DrawdownPct, 1.0);
-                    let metric = s.AnnualizedReturn / ddCap;
-                    const corrPenalty = Math.max(0.2, 1.0 - s.CorrelationScore);
-                    metric = metric * corrPenalty;
+                    const metric = getAutoWeightMetric(s);
                     weights[name] = metric;
                     totalWeightMetric += metric;
                 });
@@ -1805,10 +1872,7 @@ html_code = """<!DOCTYPE html>
                         let totalWeightMetric = 0;
                         activeStrategies.forEach(name => {
                             const st = DATASET.strategies.find(x => x.name === name);
-                            const ddCap = Math.max(st.DrawdownPct, 1.0);
-                            let metric = st.AnnualizedReturn / ddCap;
-                            const corrPenalty = Math.max(0.2, 1.0 - st.CorrelationScore);
-                            metric = metric * corrPenalty;
+                            const metric = getAutoWeightMetric(st);
                             weights[name] = metric;
                             totalWeightMetric += metric;
                         });
@@ -2007,10 +2071,7 @@ html_code = """<!DOCTYPE html>
                         let totalWeightMetric = 0;
                         activeStrategies.forEach(name => {
                             const st = DATASET.strategies.find(x => x.name === name);
-                            const ddCap = Math.max(st.DrawdownPct, 1.0);
-                            let metric = st.AnnualizedReturn / ddCap;
-                            const corrPenalty = Math.max(0.2, 1.0 - st.CorrelationScore);
-                            metric = metric * corrPenalty;
+                            const metric = getAutoWeightMetric(st);
                             weights[name] = metric;
                             totalWeightMetric += metric;
                         });
@@ -2119,13 +2180,7 @@ html_code = """<!DOCTYPE html>
             if (allocationMode === 'auto') {
                 activeStrategies.forEach(name => {
                     const s = DATASET.strategies.find(st => st.name === name);
-                    const ddCap = Math.max(s.DrawdownPct, 1.0);
-                    let metric = s.AnnualizedReturn / ddCap;
-                    
-                    // correlation penalty
-                    const corrPenalty = Math.max(0.2, 1.0 - s.CorrelationScore);
-                    metric = metric * corrPenalty;
-                    
+                    const metric = getAutoWeightMetric(s);
                     weights[name] = metric;
                     totalWeightMetric += metric;
                 });
