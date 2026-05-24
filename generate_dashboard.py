@@ -64,6 +64,17 @@ def get_market_regime(dt):
     
     return trend_regime, vix_regime
 
+def parse_datetime_safely(series):
+    if series.dropna().empty:
+        return pd.to_datetime(series)
+    sample = str(series.dropna().iloc[0])
+    separator = "-" if "-" in sample else "/" if "/" in sample else None
+    if separator:
+        parts = sample.split(separator)
+        if len(parts) > 0 and len(parts[0].strip()) == 2:
+            return pd.to_datetime(series, dayfirst=True)
+    return pd.to_datetime(series, format='mixed')
+
 # ----------------------------------------------------
 # 2. Main Analysis Loop
 # ----------------------------------------------------
@@ -89,7 +100,7 @@ for file in sorted(csv_files):
         cum_pnl_col = [c for c in df.columns if 'Cumulative P&L' in c or 'Cumulative P' in c][0]
         val_col = [c for c in df.columns if 'Size (value)' in c or 'value' in c][0]
         
-        df['Datetime'] = pd.to_datetime(df['Date and time'], format='mixed')
+        df['Datetime'] = parse_datetime_safely(df['Date and time'])
         df = df.sort_values('Datetime')
         
         # Track overall min and max dates across all strategies
@@ -255,6 +266,10 @@ for file in sorted(csv_files):
         # Sort trades by trade_no descending (show latest trades first)
         trades_ledger = sorted(trades_ledger, key=lambda x: x['trade_no'], reverse=True)
         
+        base_qty = df_exits[qty_col].mean() if qty_col and not df_exits.empty else 1.0
+        if pd.isna(base_qty) or base_qty == 0:
+            base_qty = 1.0
+            
         strategies_data[strategy_name] = {
             'name': strategy_name,
             'NetProfit': float(net_profit),
@@ -271,7 +286,8 @@ for file in sorted(csv_files):
             'Regimes': regime_performance,
             'FinalScore': float(final_score),
             'pnl_col': pnl_col,
-            'trades': trades_ledger
+            'trades': trades_ledger,
+            'BaseQty': float(base_qty)
         }
         
         # Monthly realized returns series
@@ -338,9 +354,9 @@ lot_margins = {}
 for name in strategies_data.keys():
     margin = 120000.0
     if 'GOLD' in name:
-        margin = 250000.0
+        margin = 1900000.0
     elif 'SILVER' in name:
-        margin = 200000.0
+        margin = 1900000.0
     elif 'NATURALGAS' in name:
         margin = 150000.0
     elif 'NIFTY' in name or 'MIDCAP' in name:
@@ -508,15 +524,15 @@ html_code = """<!DOCTYPE html>
         /* HERO STATS OVERVIEW */
         .stats-overview {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
         }
 
         .stat-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 8px;
+            padding: 10px 12px;
             box-shadow: var(--card-shadow);
             backdrop-filter: blur(10px);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -529,40 +545,45 @@ html_code = """<!DOCTYPE html>
             position: absolute;
             top: 0;
             left: 0;
-            width: 4px;
+            width: 3px;
             height: 100%;
             background: var(--border-color, var(--cyan));
         }
 
         .stat-card:hover {
-            transform: translateY(-4px);
+            transform: translateY(-2px);
             border-color: var(--border-glow);
             background: var(--bg-card-hover);
         }
 
         .stat-label {
-            font-size: 12px;
+            font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: var(--muted);
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-weight: 700;
+            margin-bottom: 4px;
         }
 
         .stat-value {
-            font-size: 32px;
+            font-size: 17px;
             font-weight: 800;
-            letter-spacing: -0.02em;
-            font-family: var(--sans);
+            letter-spacing: -0.01em;
+            font-family: var(--mono);
             display: flex;
             align-items: baseline;
-            gap: 5px;
+            gap: 3px;
+            white-space: nowrap;
         }
 
         .stat-desc {
-            font-size: 12px;
+            font-size: 9.5px;
             color: var(--muted);
-            margin-top: 6px;
+            margin-top: 4px;
+            line-height: 1.25;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* SIMULATOR & CONTROL GRID */
@@ -657,9 +678,9 @@ html_code = """<!DOCTYPE html>
 
         /* STRATEGY GRID */
         .strategy-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
             max-height: 480px;
             overflow-y: auto;
             padding-right: 5px;
@@ -668,11 +689,13 @@ html_code = """<!DOCTYPE html>
         .strategy-item-card {
             border: 1px solid var(--border);
             background: rgba(0,0,0,0.15);
-            border-radius: 8px;
-            padding: 12px 14px;
+            border-radius: 6px;
+            padding: 8px 12px;
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
             position: relative;
@@ -731,9 +754,7 @@ html_code = """<!DOCTYPE html>
         }
 
         .strategy-toggle-indicator {
-            position: absolute;
-            top: 10px;
-            right: 10px;
+            position: static;
             width: 14px;
             height: 14px;
             border-radius: 50%;
@@ -743,6 +764,8 @@ html_code = """<!DOCTYPE html>
             justify-content: center;
             font-size: 8px;
             color: transparent;
+            flex-shrink: 0;
+            margin-right: 4px;
         }
 
         .strategy-item-card.active .strategy-toggle-indicator {
@@ -1007,6 +1030,55 @@ html_code = """<!DOCTYPE html>
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.15);
         }
+
+        /* PREMIUM TOGGLE SWITCH */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 32px;
+            height: 18px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .3s;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 2px;
+            bottom: 2px;
+            background-color: var(--muted);
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: rgba(0, 255, 204, 0.15);
+            border-color: var(--cyan);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(14px);
+            background-color: var(--cyan);
+        }
     </style>
 </head>
 <body>
@@ -1031,7 +1103,7 @@ html_code = """<!DOCTYPE html>
         <section class="stats-overview">
             <div class="stat-card" style="--border-color: var(--cyan);">
                 <div class="stat-label">Starting Capital</div>
-                <div class="stat-value" id="capital-val">₹1.5M</div>
+                <div class="stat-value" id="capital-val">₹15 Lakhs</div>
                 <div class="stat-desc">Customizable starting pool</div>
             </div>
             <div class="stat-card" id="port-return-card" style="--border-color: var(--emerald);">
@@ -1045,13 +1117,23 @@ html_code = """<!DOCTYPE html>
                 <div class="stat-desc" id="port-dd-inr-val">₹22,551 max historical drop</div>
             </div>
             <div class="stat-card" style="--border-color: var(--emerald);">
+                <div class="stat-label">Largest Trade Profit</div>
+                <div class="stat-value" id="port-max-win-val" style="color: var(--emerald);">₹0</div>
+                <div class="stat-desc" id="port-max-win-desc" style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display:block;">--</div>
+            </div>
+            <div class="stat-card" style="--border-color: var(--rose);">
+                <div class="stat-label">Largest Trade Loss</div>
+                <div class="stat-value" id="port-max-loss-val" style="color: var(--rose);">₹0</div>
+                <div class="stat-desc" id="port-max-loss-desc" style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display:block;">--</div>
+            </div>
+            <div class="stat-card" style="--border-color: var(--emerald);">
                 <div class="stat-label">Annualized Sharpe Ratio</div>
                 <div class="stat-value" id="port-sharpe-val" style="color: var(--emerald);">3.53</div>
                 <div class="stat-desc" id="port-div-val">Diversification Score: 2.44</div>
             </div>
             <div class="stat-card" style="--border-color: var(--cyan);">
                 <div class="stat-label">Overall Backtest Period</div>
-                <div class="stat-value" id="overall-date-val" style="font-size:14px; font-weight:700; color:var(--cyan); height: 38px; display:flex; align-items:center;">-- to --</div>
+                <div class="stat-value" id="overall-date-val" style="font-size:11px; font-weight:700; color:var(--cyan); font-family:var(--mono); white-space:nowrap;">-- to --</div>
                 <div class="stat-desc" id="overall-duration-val">--</div>
             </div>
         </section>
@@ -1149,6 +1231,18 @@ html_code = """<!DOCTYPE html>
                     </table>
                 </div>
 
+                <!-- FiFTO SMART SUGGESTIONS -->
+                <div class="card" style="margin-top: 15px; border-left: 3px solid var(--cyan);">
+                    <div class="card-title" style="display:flex; align-items:center; gap:8px;">
+                        <span>💡 FiFTO Quant Suggestions</span>
+                        <span style="font-size:10px; background:rgba(0,255,204,0.1); color:var(--cyan); padding:2px 6px; border-radius:10px; font-weight:700; letter-spacing:0.5px;">REAL-TIME</span>
+                    </div>
+                    <div class="card-subtitle">AI-driven diversification suggestions based on Correlation and Drawdowns for your currently selected stocks.</div>
+                    <div id="smart-suggestions-content" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+                        <!-- Injected dynamically in runSimulation() -->
+                    </div>
+                </div>
+
             </div>
 
             <!-- RIGHT COLUMN: INTERACTIVE CHARTS & MATRIX -->
@@ -1156,7 +1250,16 @@ html_code = """<!DOCTYPE html>
 
                 <!-- EQUITY CURVE CARD -->
                 <div class="card">
-                    <div class="card-title">Simulated Portfolio Equity Curve</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <div class="card-title" style="margin-bottom:0;">Simulated Portfolio Equity Curve</div>
+                        <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:4px 10px; border-radius:20px;">
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-drawdown-chart" onchange="toggleDrawdownCurve(this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                            <span style="font-size:11px; font-weight:700; color:var(--muted); user-select:none;">Show Drawdown Bar</span>
+                        </div>
+                    </div>
                     <div class="chart-box">
                         <canvas id="portfolioChart"></canvas>
                     </div>
@@ -1214,68 +1317,248 @@ html_code = """<!DOCTYPE html>
             </div>
         </section>
 
-        <!-- 3B. INDIVIDUAL STRATEGY TRADE LEDGER -->
+        <!-- 3B. TABBED TRADE LEDGER AND ANALYTICS -->
         <section class="table-card" style="margin-top: 20px;" id="trade-ledger-section">
-            <div class="table-controls">
-                <div>
-                    <div class="card-title">Detailed Trade Ledger</div>
-                    <div class="card-subtitle" style="font-size:12px; color:var(--muted); margin-top:2px;">
-                        Showing trade logs for strategy: <strong id="ledger-strategy-name" style="color:var(--cyan); font-size:14px;">--</strong>
-                    </div>
+            <div class="table-controls" style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; gap: 5px;">
+                    <button id="tab-btn-single" class="tab-btn active" onclick="switchLedgerTab('single')" style="background: none; border: none; border-bottom: 2px solid var(--cyan); color: var(--cyan); padding: 8px 16px; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                        📊 Single Strategy Ledger
+                    </button>
+                    <button id="tab-btn-combined" class="tab-btn" onclick="switchLedgerTab('combined')" style="background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); padding: 8px 16px; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                        🧬 Combined Portfolio Ledger
+                    </button>
+                    <button id="tab-btn-analytics" class="tab-btn" onclick="switchLedgerTab('analytics')" style="background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); padding: 8px 16px; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                        ⚡ Combined Risk Analytics
+                    </button>
                 </div>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <select id="ledger-type-filter" class="search-input" style="width:130px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); padding:6px 12px; cursor:pointer;" onchange="filterLedger()">
+                
+                <!-- Filters for Single Strategy Ledger -->
+                <div id="single-ledger-filters" style="display:flex; gap:10px; align-items:center;">
+                    <span class="card-subtitle" style="font-size:12px; color:var(--muted); margin-right:5px;">
+                        Strategy: <strong id="ledger-strategy-name" style="color:var(--cyan); font-size:13px;">--</strong>
+                    </span>
+                    <select id="ledger-type-filter" class="search-input" style="width:120px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); padding:5px 10px; font-size:12px; cursor:pointer;" onchange="filterLedger()">
                         <option value="all">All Types</option>
                         <option value="Long">Long Only</option>
                         <option value="Short">Short Only</option>
                     </select>
-                    <select id="ledger-pnl-filter" class="search-input" style="width:130px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); padding:6px 12px; cursor:pointer;" onchange="filterLedger()">
+                    <select id="ledger-pnl-filter" class="search-input" style="width:120px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); padding:5px 10px; font-size:12px; cursor:pointer;" onchange="filterLedger()">
                         <option value="all">All Trades</option>
-                        <option value="win">Profitable (Wins)</option>
-                        <option value="loss">Unprofitable (Losses)</option>
+                        <option value="win">Wins Only</option>
+                        <option value="loss">Losses Only</option>
                     </select>
-                    <input type="text" class="search-input" id="ledger-search" placeholder="Search trade # or date..." oninput="filterLedger()" style="width:200px;">
+                    <input type="text" class="search-input" id="ledger-search" placeholder="Search trade # or date..." oninput="filterLedger()" style="width:180px; padding:5px 10px; font-size:12px;">
+                </div>
+
+                <!-- Filters for Combined Ledger -->
+                <div id="combined-ledger-filters" style="display:none; gap:10px; align-items:center;">
+                    <span class="card-subtitle" style="font-size:12px; color:var(--muted); margin-right:5px;">
+                        Active Strategies: <strong id="combined-active-count" style="color:var(--cyan); font-size:13px;">0</strong>
+                    </span>
+                    <select id="combined-type-filter" class="search-input" style="width:120px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); padding:5px 10px; font-size:12px; cursor:pointer;" onchange="renderCombinedLedgerAndAnalytics()">
+                        <option value="all">All Types</option>
+                        <option value="Long">Long Only</option>
+                        <option value="Short">Short Only</option>
+                    </select>
+                    <select id="combined-pnl-filter" class="search-input" style="width:120px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); padding:5px 10px; font-size:12px; cursor:pointer;" onchange="renderCombinedLedgerAndAnalytics()">
+                        <option value="all">All Trades</option>
+                        <option value="win">Wins Only</option>
+                        <option value="loss">Losses Only</option>
+                    </select>
+                    <input type="text" class="search-input" id="combined-search" placeholder="Search strategy or date..." oninput="renderCombinedLedgerAndAnalytics()" style="width:180px; padding:5px 10px; font-size:12px;">
+                </div>
+
+                <!-- Filters for Analytics -->
+                <div id="analytics-ledger-filters" style="display:none; align-items:center;">
+                    <span class="card-subtitle" style="font-size:12px; color:var(--muted);">
+                        Real-time Advanced Risk Metrics
+                    </span>
                 </div>
             </div>
-            
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; padding:15px; margin-bottom:15px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px;">
-                <div style="border-left:2px solid var(--cyan); padding-left:10px;">
-                    <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Net Profit</span>
-                    <div id="ledger-net-profit" style="font-size:16px; font-weight:700; font-family:var(--mono);">₹0</div>
+
+            <!-- CONTAINER 1: SINGLE STRATEGY LEDGER -->
+            <div id="ledger-single-container" style="display: block;">
+                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; padding:12px; margin-bottom:15px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px;">
+                    <div style="border-left:2px solid var(--cyan); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Net Profit</span>
+                        <div id="ledger-net-profit" style="font-size:16px; font-weight:700; font-family:var(--mono);">₹0</div>
+                    </div>
+                    <div style="border-left:2px solid var(--emerald); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Win Rate %</span>
+                        <div id="ledger-win-rate" style="font-size:16px; font-weight:700; font-family:var(--mono);">0.0%</div>
+                    </div>
+                    <div style="border-left:2px solid var(--cyan); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Profit Factor</span>
+                        <div id="ledger-profit-factor" style="font-size:16px; font-weight:700; font-family:var(--mono);">0.00</div>
+                    </div>
+                    <div style="border-left:2px solid var(--border); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Total Trades</span>
+                        <div id="ledger-trade-count" style="font-size:16px; font-weight:700; font-family:var(--mono);">0</div>
+                    </div>
                 </div>
-                <div style="border-left:2px solid var(--emerald); padding-left:10px;">
-                    <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Win Rate %</span>
-                    <div id="ledger-win-rate" style="font-size:16px; font-weight:700; font-family:var(--mono);">0.0%</div>
-                </div>
-                <div style="border-left:2px solid var(--cyan); padding-left:10px;">
-                    <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Profit Factor</span>
-                    <div id="ledger-profit-factor" style="font-size:16px; font-weight:700; font-family:var(--mono);">0.00</div>
-                </div>
-                <div style="border-left:2px solid var(--border); padding-left:10px;">
-                    <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Total Trades</span>
-                    <div id="ledger-trade-count" style="font-size:16px; font-weight:700; font-family:var(--mono);">0</div>
+                
+                <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+                    <table class="score-table">
+                        <thead>
+                            <tr>
+                                <th>Trade #</th>
+                                <th>Type</th>
+                                <th>Entry Price</th>
+                                <th>Entry Time</th>
+                                <th>Exit Price</th>
+                                <th>Exit Time</th>
+                                <th>Quantity</th>
+                                <th>Net P&L (INR)</th>
+                                <th>Net P&L (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trade-ledger-body">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            
-            <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
-                <table class="score-table">
-                    <thead>
-                        <tr>
-                            <th>Trade #</th>
-                            <th>Type</th>
-                            <th>Entry Price</th>
-                            <th>Entry Time</th>
-                            <th>Exit Price</th>
-                            <th>Exit Time</th>
-                            <th>Quantity</th>
-                            <th>Net P&L (INR)</th>
-                            <th>Net P&L (%)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="trade-ledger-body">
-                        <!-- Injected dynamically -->
-                    </tbody>
-                </table>
+
+            <!-- CONTAINER 2: COMBINED PORTFOLIO LEDGER -->
+            <div id="ledger-combined-container" style="display: none;">
+                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; padding:12px; margin-bottom:15px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px;">
+                    <div style="border-left:2px solid var(--cyan); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Combined P&L</span>
+                        <div id="combined-net-profit" style="font-size:16px; font-weight:700; font-family:var(--mono);">₹0</div>
+                    </div>
+                    <div style="border-left:2px solid var(--emerald); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Combined Win Rate</span>
+                        <div id="combined-win-rate" style="font-size:16px; font-weight:700; font-family:var(--mono);">0.0%</div>
+                    </div>
+                    <div style="border-left:2px solid var(--cyan); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Combined Profit Factor</span>
+                        <div id="combined-profit-factor" style="font-size:16px; font-weight:700; font-family:var(--mono);">0.00</div>
+                    </div>
+                    <div style="border-left:2px solid var(--border); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Active Combined Trades</span>
+                        <div id="combined-trade-count" style="font-size:16px; font-weight:700; font-family:var(--mono);">0</div>
+                    </div>
+                </div>
+                
+                <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+                    <table class="score-table">
+                        <thead>
+                            <tr>
+                                <th>Time (Exit)</th>
+                                <th>Strategy</th>
+                                <th>Type</th>
+                                <th>Entry Price / Time</th>
+                                <th>Exit Price / Time</th>
+                                <th>Lots Size</th>
+                                <th>Total Qty</th>
+                                <th>Simulated P&L</th>
+                            </tr>
+                        </thead>
+                        <tbody id="combined-ledger-body">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CONTAINER 3: COMBINED PORTFOLIO RISK ANALYTICS -->
+            <div id="ledger-analytics-container" style="display: none;">
+                <!-- Streak and Summary metrics -->
+                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; padding:15px; margin-bottom:20px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px;">
+                    <div style="border-left:2px solid var(--emerald); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Max Winning Streak</span>
+                        <div id="analytics-win-streak" style="font-size:18px; font-weight:700; font-family:var(--mono); color:var(--emerald);">0 trades</div>
+                        <span id="analytics-win-streak-detail" style="font-size:9px; color:var(--muted);">Total gain: ₹0</span>
+                    </div>
+                    <div style="border-left:2px solid var(--rose); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Max Losing Streak</span>
+                        <div id="analytics-loss-streak" style="font-size:18px; font-weight:700; font-family:var(--mono); color:var(--rose);">0 trades</div>
+                        <span id="analytics-loss-streak-detail" style="font-size:9px; color:var(--muted);">Total loss: ₹0</span>
+                    </div>
+                    <div style="border-left:2px solid var(--cyan); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Largest Single Win</span>
+                        <div id="analytics-max-win" style="font-size:18px; font-weight:700; font-family:var(--mono); color:var(--emerald);">₹0</div>
+                        <span id="analytics-max-win-strat" style="font-size:9px; color:var(--muted); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display:block;">--</span>
+                    </div>
+                    <div style="border-left:2px solid var(--rose); padding-left:10px;">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase;">Largest Single Loss</span>
+                        <div id="analytics-max-loss" style="font-size:18px; font-weight:700; font-family:var(--mono); color:var(--rose);">₹0</div>
+                        <span id="analytics-max-loss-strat" style="font-size:9px; color:var(--muted); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display:block;">--</span>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
+                    <!-- Top 5 Profits -->
+                    <div>
+                        <div class="card-title" style="font-size:13px; color:var(--emerald); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                            <span>🏆 Top 5 Highly Profitable Trades</span>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="score-table" style="font-size:11px;">
+                                <thead>
+                                    <tr>
+                                        <th>Strategy</th>
+                                        <th>Exit Time</th>
+                                        <th>Qty</th>
+                                        <th>Net Profit (INR)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analytics-top-profits-body">
+                                    <!-- Injected dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Top 5 Losses -->
+                    <div>
+                        <div class="card-title" style="font-size:13px; color:var(--rose); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                            <span>⚠️ Top 5 Largest Losing Trades</span>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="score-table" style="font-size:11px;">
+                                <thead>
+                                    <tr>
+                                        <th>Strategy</th>
+                                        <th>Exit Time</th>
+                                        <th>Qty</th>
+                                        <th>Net Loss (INR)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analytics-top-losses-body">
+                                    <!-- Injected dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drawdown Epochs Table -->
+                <div style="margin-top: 15px;">
+                    <div class="card-title" style="font-size:13px; color:var(--cyan); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <span>📉 Top Drawdown Epochs (Peak to Recovery Timeline)</span>
+                    </div>
+                    <div class="table-wrapper" style="max-height: 250px; overflow-y: auto;">
+                        <table class="score-table" style="font-size:11px;">
+                            <thead>
+                                <tr>
+                                    <th>Epoch</th>
+                                    <th>Peak Date/Time</th>
+                                    <th>Worst Trough Date/Time</th>
+                                    <th>Recovery Date/Time</th>
+                                    <th>Duration</th>
+                                    <th>Peak Equity</th>
+                                    <th>Max Drop (INR)</th>
+                                    <th>Max Drop %</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analytics-drawdowns-body">
+                                <!-- Injected dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1332,13 +1615,19 @@ html_code = """<!DOCTYPE html>
         let sortColumn = 'FinalScore';
         let sortDirection = 'desc';
         let chartInstance = null;
+        let showDrawdownOnChart = false;
+        let lastFilteredDates = [];
+        let lastPortfolioEquity = [];
         let currentLedgerStrategy = '';
+        let allocatedLots = {};
+        let allocatedCap = {};
         
         // Manual Custom allocations
         let allocationMode = 'auto';
         const strategyWeights = {};
         const strategyMargins = {};
         const strategyLotSizes = {};
+        const strategyCapitals = {};
 
         // Initialize App
         function initApp() {
@@ -1365,14 +1654,16 @@ html_code = """<!DOCTYPE html>
             
             let dropdownHtml = '';
             DATASET.dates.forEach(d => {
-                dropdownHtml += `<option value="${d}">${d}</option>`;
+                const parts = d.split('-');
+                const formatted = parts[1] + '-' + parts[0];
+                dropdownHtml += `<option value="${d}">${formatted}</option>`;
             });
             
             startDropdown.innerHTML = dropdownHtml;
             endDropdown.innerHTML = dropdownHtml;
             
-            // Set defaults: first date and last date
-            startDropdown.value = DATASET.dates[0];
+            // Set defaults: start from 2024-10 if available, otherwise first date, and last date
+            startDropdown.value = DATASET.dates.includes('2024-10') ? '2024-10' : DATASET.dates[0];
             endDropdown.value = DATASET.dates[DATASET.dates.length - 1];
 
             // Initialize custom weights, margins & lot sizes
@@ -1380,14 +1671,11 @@ html_code = """<!DOCTYPE html>
                 strategyWeights[s.name] = s.status === 'Kept' ? 5 : 0;
                 strategyMargins[s.name] = DATASET.lot_margins[s.name] || 120000;
                 
-                // Set default lot sizes: Stocks default to 1 Qty, Commodities/Indices use standards
-                let defaultLotSize = 1;
-                if (s.name.includes('NIFTY') || s.name.includes('MIDCAP')) defaultLotSize = 75;
-                else if (s.name.includes('GOLD')) defaultLotSize = 100;
-                else if (s.name.includes('NATURALGAS')) defaultLotSize = 1250;
-                else if (s.name.includes('SILVER')) defaultLotSize = 30;
+                // Set default lot size to the strategy's backtest base quantity
+                let defaultLotSize = s.BaseQty || 1.0;
                 
                 strategyLotSizes[s.name] = defaultLotSize;
+                strategyCapitals[s.name] = 0;
             });
 
             // Select all 'Kept' strategies by default
@@ -1408,14 +1696,57 @@ html_code = """<!DOCTYPE html>
             allocationMode = mode;
             document.getElementById('auto-label').style.color = mode === 'auto' ? 'var(--cyan)' : 'var(--muted)';
             document.getElementById('manual-label').style.color = mode === 'manual' ? 'var(--cyan)' : 'var(--muted)';
+            
+            // Pre-fill manual capitals with current auto-allocated capitals when switching
+            if (mode === 'manual') {
+                const weights = {};
+                let totalWeightMetric = 0;
+                
+                activeStrategies.forEach(name => {
+                    const s = DATASET.strategies.find(st => st.name === name);
+                    const ddCap = Math.max(s.DrawdownPct, 1.0);
+                    let metric = s.AnnualizedReturn / ddCap;
+                    const corrPenalty = Math.max(0.2, 1.0 - s.CorrelationScore);
+                    metric = metric * corrPenalty;
+                    weights[name] = metric;
+                    totalWeightMetric += metric;
+                });
+                
+                activeStrategies.forEach(name => {
+                    const weight = totalWeightMetric > 0 ? weights[name] / totalWeightMetric : 0;
+                    strategyCapitals[name] = Math.round(weight * selectedCapital);
+                });
+            }
+            
             renderStrategySelector();
+            runSimulation();
+        }
+
+        // Update custom Capital allocated to strategy manually
+        function updateStrategyCapital(name, val) {
+            strategyCapitals[name] = parseFloat(val) || 0;
+            
+            if (allocationMode === 'manual') {
+                let totalCap = 0;
+                activeStrategies.forEach(n => {
+                    totalCap += strategyCapitals[n] || 0;
+                });
+                selectedCapital = totalCap;
+                const capLakhs = selectedCapital / 100000;
+                const formattedCap = capLakhs % 1 === 0 ? capLakhs.toFixed(0) : capLakhs.toFixed(1);
+                document.getElementById('capital-val').textContent = `₹${formattedCap} Lakhs`;
+                document.getElementById('capital-control-display').textContent = `₹${selectedCapital.toLocaleString("en-IN")}`;
+                document.getElementById('capital-slider').value = selectedCapital;
+            }
+            
             runSimulation();
         }
 
         // Update Strategy Custom Weight
         function updateStrategyWeight(name, val) {
             strategyWeights[name] = parseFloat(val);
-            document.querySelector(`.weight-val-${name}`).textContent = val;
+            const valEl = document.querySelector(`.weight-val-${name}`);
+            if (valEl) valEl.textContent = val;
             
             // Auto include if weight > 0, exclude if weight == 0
             if (parseFloat(val) > 0 && !activeStrategies.includes(name)) {
@@ -1428,12 +1759,15 @@ html_code = """<!DOCTYPE html>
             // Find card and toggle active class
             const cards = document.querySelectorAll('.strategy-item-card');
             cards.forEach(card => {
-                const cardName = card.querySelector('.strategy-card-name').textContent.split(' ')[0];
-                if (cardName === name) {
-                    if (parseFloat(val) > 0) {
-                        card.classList.add('active');
-                    } else {
-                        card.classList.remove('active');
+                const nameEl = card.querySelector('.strategy-card-name');
+                if (nameEl) {
+                    const cardName = nameEl.textContent.trim().split(' ')[0];
+                    if (cardName === name) {
+                        if (parseFloat(val) > 0) {
+                            card.classList.add('active');
+                        } else {
+                            card.classList.remove('active');
+                        }
                     }
                 }
             });
@@ -1449,7 +1783,7 @@ html_code = """<!DOCTYPE html>
 
         // Update Strategy Lot Size Qty
         function updateStrategyLotSize(name, val) {
-            strategyLotSizes[name] = parseInt(val) || 1;
+            strategyLotSizes[name] = parseFloat(val) || 0.5;
             runSimulation();
         }
 
@@ -1463,38 +1797,50 @@ html_code = """<!DOCTYPE html>
                 const margin = strategyMargins[s.name] !== undefined ? strategyMargins[s.name] : (DATASET.lot_margins[s.name] || 120000);
                 const lotsize = strategyLotSizes[s.name] !== undefined ? strategyLotSizes[s.name] : 250;
                 
+                // Calculate allocated capital for this card
+                let cap = 0;
+                if (isActive) {
+                    if (allocationMode === 'auto') {
+                        const weights = {};
+                        let totalWeightMetric = 0;
+                        activeStrategies.forEach(name => {
+                            const st = DATASET.strategies.find(x => x.name === name);
+                            const ddCap = Math.max(st.DrawdownPct, 1.0);
+                            let metric = st.AnnualizedReturn / ddCap;
+                            const corrPenalty = Math.max(0.2, 1.0 - st.CorrelationScore);
+                            metric = metric * corrPenalty;
+                            weights[name] = metric;
+                            totalWeightMetric += metric;
+                        });
+                        const sWeight = totalWeightMetric > 0 ? (weights[s.name] || 0) / totalWeightMetric : 0;
+                        cap = sWeight * selectedCapital;
+                    } else {
+                        cap = strategyCapitals[s.name] !== undefined ? strategyCapitals[s.name] : (selectedCapital / activeStrategies.length);
+                    }
+                }
+                
                 return `
-                    <div class="strategy-item-card ${isActive ? 'active' : ''} ${!isKept ? 'rejected' : ''}" onclick="toggleStrategy('${s.name}', event)" style="padding-bottom: 8px;">
-                        <div class="strategy-card-header">
-                            <span class="strategy-card-name">${s.name} ${!isKept ? '⚠️' : ''}</span>
-                            <span class="strategy-card-score">${s.FinalScore.toFixed(1)} Pts</span>
-                        </div>
-                        <div class="strategy-card-metrics">
-                            <span>PF: <strong>${s.ProfitFactor.toFixed(2)}</strong></span>
-                            <span>DD: <strong>${s.DrawdownPct.toFixed(1)}%</strong></span>
-                            <span>WR: <strong>${s.WinRate.toFixed(1)}%</strong></span>
-                            <span>Trd: <strong>${s.TradeCount}</strong></span>
+                    <div class="strategy-item-card ${isActive ? 'active' : ''} ${!isKept ? 'rejected' : ''}" onclick="toggleStrategy('${s.name}', event)" style="padding: 6px 12px; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+                            <div class="strategy-toggle-indicator" style="position: static; flex-shrink: 0;">✓</div>
+                            <span class="strategy-card-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; font-weight: 700;">${s.name} ${!isKept ? '⚠️' : ''}</span>
                         </div>
                         
-                        <div class="manual-strategy-controls" onclick="event.stopPropagation()" style="margin-top: 8px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--border); padding-top: 6px;">
-                            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--muted);">
-                                <span>Rel. Weight:</span>
-                                <span class="weight-val-${s.name}" style="color:var(--cyan); font-weight:700;">${weight}</span>
+                        <div class="manual-strategy-controls" onclick="event.stopPropagation()" style="display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-top: 0; border-top: none; padding-top: 0;">
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <span style="font-size:10px; color:var(--muted);">Capital:</span>
+                                <input type="number" class="capital-input-${s.name}" value="${Math.round(cap)}" onchange="updateStrategyCapital('${s.name}', this.value)" style="width:82px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:10px; text-align:right; border-radius:3px; padding:2px 4px; outline:none;" ${allocationMode === 'auto' ? 'disabled style="opacity:0.6; cursor:not-allowed;"' : ''}>
                             </div>
-                            <input type="range" class="weight-slider-${s.name}" min="0" max="10" step="1" value="${weight}" oninput="updateStrategyWeight('${s.name}', this.value)" style="height:3px; margin:2px 0;" ${allocationMode === 'auto' ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
-                            
-                            <div style="display:flex; align-items:center; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:2px;">
-                                <span>Margin/Lot:</span>
-                                <input type="number" class="margin-input-${s.name}" value="${margin}" onchange="updateStrategyMargin('${s.name}', this.value)" style="width:75px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:9px; text-align:right; border-radius:3px; padding:1px 4px; outline:none;">
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <span style="font-size:10px; color:var(--muted);">Margin:</span>
+                                <input type="number" class="margin-input-${s.name}" value="${margin}" onchange="updateStrategyMargin('${s.name}', this.value)" style="width:72px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:10px; text-align:right; border-radius:3px; padding:2px 4px; outline:none;">
                             </div>
-                            <div style="display:flex; align-items:center; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:2px;">
-                                <span>Qty per Lot:</span>
-                                <input type="number" class="lotsize-input-${s.name}" value="${lotsize}" onchange="updateStrategyLotSize('${s.name}', this.value)" style="width:75px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:9px; text-align:right; border-radius:3px; padding:1px 4px; outline:none;">
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <span style="font-size:10px; color:var(--muted);">Lot Size:</span>
+                                <input type="number" step="0.5" class="lotsize-input-${s.name}" value="${lotsize}" onchange="updateStrategyLotSize('${s.name}', this.value)" onwheel="event.preventDefault(); const current = parseFloat(this.value) || 0; const step = 0.5; const nextVal = event.deltaY < 0 ? current + step : Math.max(0, current - step); this.value = nextVal; updateStrategyLotSize('${s.name}', nextVal);" style="width:55px; background:rgba(0,0,0,0.5); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:10px; text-align:right; border-radius:3px; padding:2px 4px; outline:none;">
                             </div>
-                            <button onclick="selectLedgerStrategy('${s.name}')" style="margin-top:6px; background:rgba(0,255,204,0.1); border:1px solid rgba(0,255,204,0.25); color:var(--cyan); padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:600; width:100%; text-align:center; transition:all 0.2s;" onmouseover="this.style.background='rgba(0,255,204,0.2)'" onmouseout="this.style.background='rgba(0,255,204,0.1)'">View Trade Ledger 📊</button>
+                            <button onclick="selectLedgerStrategy('${s.name}')" style="background:none; border:none; color:var(--cyan); cursor:pointer; font-size:12px; padding:2px; display:flex; align-items:center;" title="View Ledger">📊</button>
                         </div>
-                        
-                        <div class="strategy-toggle-indicator">✓</div>
                     </div>
                 `;
             }).join('');
@@ -1513,8 +1859,14 @@ html_code = """<!DOCTYPE html>
                 }
             } else {
                 activeStrategies.push(name);
-                if (allocationMode === 'manual' && strategyWeights[name] === 0) {
-                    strategyWeights[name] = 5;
+                if (allocationMode === 'manual') {
+                    if (strategyWeights[name] === 0) {
+                        strategyWeights[name] = 5;
+                    }
+                    // Pre-fill capital with at least 1 lot margin if it is currently 0 or undefined
+                    if (!strategyCapitals[name] || strategyCapitals[name] === 0) {
+                        strategyCapitals[name] = strategyMargins[name] || 120000;
+                    }
                 }
             }
             renderStrategySelector();
@@ -1621,7 +1973,7 @@ html_code = """<!DOCTYPE html>
             const body = document.getElementById('score-table-body');
             const searchVal = document.getElementById('table-search').value.toLowerCase();
             
-            let list = [...DATASET.strategies];
+            let list = DATASET.strategies.filter(s => activeStrategies.includes(s.name));
             
             // Search filter
             if (searchVal) {
@@ -1643,21 +1995,71 @@ html_code = """<!DOCTYPE html>
                 return 0;
             });
             
-            body.innerHTML = list.map(s => `
-                <tr class="${s.status === 'Rejected' ? 'rejected-row' : ''} ${s.name === currentLedgerStrategy ? 'active-ledger-row' : ''}" onclick="selectLedgerStrategy('${s.name}')" style="cursor:pointer;" title="Click to view detailed trade ledger">
-                    <td><strong>${s.name}</strong></td>
-                    <td><span class="status-badge ${s.status.toLowerCase()}">${s.status}</span></td>
-                    <td style="color:${s.NetProfit >= 0 ? 'var(--emerald)' : 'var(--rose)'}">₹${s.NetProfit.toLocaleString("en-IN")}</td>
-                    <td>${s.DrawdownPct.toFixed(1)}%</td>
-                    <td>${s.ProfitFactor.toFixed(2)}</td>
-                    <td>${s.WinRate.toFixed(1)}%</td>
-                    <td>${s.RiskReward.toFixed(2)}</td>
-                    <td>${s.TradeCount}</td>
-                    <td>${s.ConsistencyScore.toFixed(1)}%</td>
-                    <td>${s.CorrelationScore.toFixed(2)}</td>
-                    <td style="color:var(--cyan); font-weight:700;">${s.FinalScore.toFixed(1)}</td>
-                </tr>
-            `).join('');
+            body.innerHTML = list.map(s => {
+                const isActive = activeStrategies.includes(s.name);
+                let simulatedPnlHtml = '';
+                let simulatedDdHtml = '';
+                
+                if (isActive) {
+                    let cap = 0;
+                    if (allocationMode === 'auto') {
+                        const weights = {};
+                        let totalWeightMetric = 0;
+                        activeStrategies.forEach(name => {
+                            const st = DATASET.strategies.find(x => x.name === name);
+                            const ddCap = Math.max(st.DrawdownPct, 1.0);
+                            let metric = st.AnnualizedReturn / ddCap;
+                            const corrPenalty = Math.max(0.2, 1.0 - st.CorrelationScore);
+                            metric = metric * corrPenalty;
+                            weights[name] = metric;
+                            totalWeightMetric += metric;
+                        });
+                        const sWeight = totalWeightMetric > 0 ? (weights[s.name] || 0) / totalWeightMetric : 0;
+                        cap = sWeight * selectedCapital;
+                    } else {
+                        cap = strategyCapitals[s.name] !== undefined ? strategyCapitals[s.name] : (selectedCapital / activeStrategies.length);
+                    }
+                    
+                    const margin = strategyMargins[s.name] !== undefined ? strategyMargins[s.name] : (DATASET.lot_margins[s.name] || 120000);
+                    const lotsize = strategyLotSizes[s.name] !== undefined ? strategyLotSizes[s.name] : 250;
+                    const isMcx = s.name.includes('MCX');
+                    const lots = isMcx ? parseFloat((cap / margin).toFixed(2)) : Math.floor(cap / margin);
+                    const totalQty = lots * lotsize;
+                    const baseQty = s.BaseQty || 1.0;
+                    const scaleFactor = totalQty / baseQty;
+                    
+                    const simProfit = s.NetProfit * scaleFactor;
+                    const simDdINR = s.DrawdownINR * scaleFactor;
+                    
+                    simulatedPnlHtml = `<div style="font-size:9px; color:var(--cyan); margin-top:2px; font-weight:600; font-family:var(--mono);">Sim: ₹${Math.round(simProfit).toLocaleString("en-IN")}</div>`;
+                    simulatedDdHtml = `<div style="font-size:9px; color:var(--cyan); margin-top:2px; font-weight:600; font-family:var(--mono);">Sim: ₹${Math.round(simDdINR).toLocaleString("en-IN")}</div>`;
+                } else {
+                    simulatedPnlHtml = `<div style="font-size:9px; color:var(--muted); margin-top:2px; font-family:var(--mono);">Sim: ₹0</div>`;
+                    simulatedDdHtml = `<div style="font-size:9px; color:var(--muted); margin-top:2px; font-family:var(--mono);">Sim: ₹0</div>`;
+                }
+                
+                return `
+                    <tr class="${s.status === 'Rejected' ? 'rejected-row' : ''} ${s.name === currentLedgerStrategy ? 'active-ledger-row' : ''}" onclick="selectLedgerStrategy('${s.name}')" style="cursor:pointer; transition: opacity 0.25s, filter 0.25s; ${!isActive ? 'opacity:0.45; filter:grayscale(60%);' : ''}" title="Click to view detailed trade ledger">
+                        <td><strong>${s.name}</strong></td>
+                        <td><span class="status-badge ${s.status.toLowerCase()}">${s.status}</span></td>
+                        <td style="color:${s.NetProfit >= 0 ? 'var(--emerald)' : 'var(--rose)'}">
+                            <div>₹${s.NetProfit.toLocaleString("en-IN")}</div>
+                            ${simulatedPnlHtml}
+                        </td>
+                        <td>
+                            <div>${s.DrawdownPct.toFixed(1)}%</div>
+                            ${simulatedDdHtml}
+                        </td>
+                        <td>${s.ProfitFactor.toFixed(2)}</td>
+                        <td>${s.WinRate.toFixed(1)}%</td>
+                        <td>${s.RiskReward.toFixed(2)}</td>
+                        <td>${s.TradeCount}</td>
+                        <td>${s.ConsistencyScore.toFixed(1)}%</td>
+                        <td>${s.CorrelationScore.toFixed(2)}</td>
+                        <td style="color:var(--cyan); font-weight:700;">${s.FinalScore.toFixed(1)}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function sortTable(column) {
@@ -1677,7 +2079,9 @@ html_code = """<!DOCTYPE html>
         // Update Capital from Slider
         function updateCapital(val) {
             selectedCapital = parseInt(val);
-            document.getElementById('capital-val').textContent = `₹${(selectedCapital / 100000).toFixed(1)}L`;
+            const capLakhs = selectedCapital / 100000;
+            const formattedCap = capLakhs % 1 === 0 ? capLakhs.toFixed(0) : capLakhs.toFixed(1);
+            document.getElementById('capital-val').textContent = `₹${formattedCap} Lakhs`;
             document.getElementById('capital-control-display').textContent = `₹${selectedCapital.toLocaleString("en-IN")}`;
             runSimulation();
         }
@@ -1686,6 +2090,11 @@ html_code = """<!DOCTYPE html>
         // 4. Portfolio Simulator Core Math (JS)
         // ----------------------------------------------------
         function runSimulation() {
+            let filteredAllTrades = [];
+            if (activeStrategies.length > 0 && !activeStrategies.includes(currentLedgerStrategy)) {
+                currentLedgerStrategy = activeStrategies[0];
+            }
+
             if (activeStrategies.length === 0) {
                 // Empty state
                 document.getElementById('port-return-val').textContent = '₹0';
@@ -1700,12 +2109,15 @@ html_code = """<!DOCTYPE html>
                 return;
             }
 
-            // Calculate active strategy weights based on mode
+            // Calculate active strategy weights and capitals based on mode
             const weights = {};
+            allocatedCap = {};
+            allocatedLots = {};
+            const normWeights = {};
             let totalWeightMetric = 0;
             
-            activeStrategies.forEach(name => {
-                if (allocationMode === 'auto') {
+            if (allocationMode === 'auto') {
+                activeStrategies.forEach(name => {
                     const s = DATASET.strategies.find(st => st.name === name);
                     const ddCap = Math.max(s.DrawdownPct, 1.0);
                     let metric = s.AnnualizedReturn / ddCap;
@@ -1715,30 +2127,50 @@ html_code = """<!DOCTYPE html>
                     metric = metric * corrPenalty;
                     
                     weights[name] = metric;
-                } else {
-                    weights[name] = strategyWeights[name] || 0;
-                }
-                totalWeightMetric += weights[name];
-            });
+                    totalWeightMetric += metric;
+                });
+                
+                activeStrategies.forEach(name => {
+                    const weight = totalWeightMetric > 0 ? weights[name] / totalWeightMetric : 0;
+                    normWeights[name] = weight;
+                    allocatedCap[name] = weight * selectedCapital;
+                });
+            } else {
+                // manual mode: capitals are directly retrieved
+                activeStrategies.forEach(name => {
+                    allocatedCap[name] = strategyCapitals[name] !== undefined ? strategyCapitals[name] : (selectedCapital / activeStrategies.length);
+                });
+                
+                // Recalculate total capital as sum of manual active strategy capitals
+                let sumCap = 0;
+                activeStrategies.forEach(name => {
+                    sumCap += allocatedCap[name];
+                });
+                selectedCapital = sumCap;
+                
+                // update main displays
+                const capLakhs = selectedCapital / 100000;
+                const formattedCap = capLakhs % 1 === 0 ? capLakhs.toFixed(0) : capLakhs.toFixed(1);
+                document.getElementById('capital-val').textContent = `₹${formattedCap} Lakhs`;
+                document.getElementById('capital-control-display').textContent = `₹${selectedCapital.toLocaleString("en-IN")}`;
+                document.getElementById('capital-slider').value = selectedCapital;
+                
+                activeStrategies.forEach(name => {
+                    normWeights[name] = selectedCapital > 0 ? allocatedCap[name] / selectedCapital : 0;
+                });
+            }
 
-            // Normalize weights & build allocation table
-            const normWeights = {};
-            const allocatedCap = {};
-            const allocatedLots = {};
-            
             let lotsTableHtml = '';
             
             activeStrategies.forEach(name => {
                 const s = DATASET.strategies.find(st => st.name === name);
-                const weight = totalWeightMetric > 0 ? weights[name] / totalWeightMetric : 0;
-                normWeights[name] = weight;
-                
-                const cap = weight * selectedCapital;
-                allocatedCap[name] = cap;
+                const cap = allocatedCap[name];
+                const weight = normWeights[name];
                 
                 const margin = strategyMargins[name] || 120000;
                 const lotsize = strategyLotSizes[name] || 250;
-                const lots = Math.floor(cap / margin);
+                const isMcx = name.includes('MCX');
+                const lots = isMcx ? parseFloat((cap / margin).toFixed(2)) : Math.floor(cap / margin);
                 allocatedLots[name] = lots;
                 const totalQty = lots * lotsize;
                 
@@ -1766,10 +2198,17 @@ html_code = """<!DOCTYPE html>
             const portfolioMonthlyPnl = new Array(numMonthsFiltered).fill(0.0);
             
             activeStrategies.forEach(name => {
-                const weight = normWeights[name];
+                const s = DATASET.strategies.find(st => st.name === name);
                 const pnlSeries = DATASET.aligned_monthly_pnl[name];
+                
+                const lots = allocatedLots[name] || 0;
+                const lotsize = strategyLotSizes[name] || 250;
+                const simulatedQty = lots * lotsize;
+                const baseQty = s.BaseQty || 1.0;
+                const scaleFactor = simulatedQty / baseQty;
+                
                 for (let i = startIndex; i <= endIndex; i++) {
-                    portfolioMonthlyPnl[i - startIndex] += pnlSeries[i] * weight;
+                    portfolioMonthlyPnl[i - startIndex] += pnlSeries[i] * scaleFactor;
                 }
             });
 
@@ -1783,20 +2222,53 @@ html_code = """<!DOCTYPE html>
 
             const portfolioEquity = portfolioCumPnl.map(pnl => selectedCapital + pnl);
             
-            // Drawdown calculation
-            let runningMax = selectedCapital;
+            // Drawdown calculation - Trade-by-trade portfolio drawdown for realistic risk representation
             let maxDdPct = 0.0;
             let maxDdInr = 0.0;
             
-            portfolioEquity.forEach(eq => {
-                if (eq > runningMax) {
-                    runningMax = eq;
-                }
-                const ddInr = runningMax - eq;
-                const ddPct = (ddInr / runningMax) * 100;
-                if (ddPct > maxDdPct) maxDdPct = ddPct;
-                if (ddInr > maxDdInr) maxDdInr = ddInr;
-            });
+            if (activeStrategies.length > 0) {
+                let allTrades = [];
+                activeStrategies.forEach(name => {
+                    const s = DATASET.strategies.find(st => st.name === name);
+                    if (!s || !s.trades) return;
+                    
+                    const lots = allocatedLots[name] || 0;
+                    const lotsize = strategyLotSizes[name] || 250;
+                    const simulatedQty = lots * lotsize;
+                    const baseQty = s.BaseQty || 1.0;
+                    const scaleFactor = baseQty > 0 ? simulatedQty / baseQty : 0;
+                    
+                    s.trades.forEach(t => {
+                        allTrades.push({
+                            pnl_inr: t.pnl_inr * scaleFactor,
+                            exit_time: t.exit_time
+                        });
+                    });
+                });
+                
+                // Filter by selected start/end months
+                filteredAllTrades = allTrades.filter(t => {
+                    const ym = getTradeYearMonth(t.exit_time);
+                    return ym >= startMonthVal && ym <= endMonthVal;
+                });
+                
+                // Sort chronologically ascending
+                filteredAllTrades.sort((a, b) => parseDateObject(a.exit_time) - parseDateObject(b.exit_time));
+                
+                let runningEq = selectedCapital;
+                let peakEq = selectedCapital;
+                
+                filteredAllTrades.forEach(t => {
+                    runningEq += t.pnl_inr;
+                    if (runningEq > peakEq) {
+                        peakEq = runningEq;
+                    }
+                    const ddInr = peakEq - runningEq;
+                    const ddPct = (ddInr / peakEq) * 100;
+                    if (ddPct > maxDdPct) maxDdPct = ddPct;
+                    if (ddInr > maxDdInr) maxDdInr = ddInr;
+                });
+            }
 
             // Expected return
             const totalProfit = portfolioMonthlyPnl.reduce((a, b) => a + b, 0);
@@ -1849,11 +2321,171 @@ html_code = """<!DOCTYPE html>
             document.getElementById('port-sharpe-val').textContent = portfolioSharpe.toFixed(2);
             document.getElementById('port-div-val').textContent = `Diversification Score: ${divScore.toFixed(2)}`;
 
-            // Render Chart
-            renderChart(filteredDates, portfolioEquity);
+            // Build high-fidelity trade-by-trade equity curve to perfectly match drawdown epochs and show intra-month risk
+            const tradeDates = ['Start'];
+            const tradeEquity = [selectedCapital];
+            let currentEq = selectedCapital;
+            
+            if (activeStrategies.length > 0) {
+                filteredAllTrades.forEach(t => {
+                    currentEq += t.pnl_inr;
+                    const datePart = t.exit_time ? t.exit_time.split(' ')[0] : '';
+                    tradeDates.push(datePart || 'Trade');
+                    tradeEquity.push(currentEq);
+                });
+            }
+
+            // Save global chart cache for seamless re-rendering
+            lastFilteredDates = [...tradeDates];
+            lastPortfolioEquity = [...tradeEquity];
+
+            // Render Chart using the high-fidelity trade-by-trade equity curve
+            renderChart(tradeDates, tradeEquity);
 
             // Dynamically recalculate and display correlation matrix for selected strategies only
             renderCorrelationMatrix();
+
+            // Generate real-time Quant suggestions based on correlation and drawdowns
+            const suggestionsContainer = document.getElementById('smart-suggestions-content');
+            if (suggestionsContainer) {
+                if (activeStrategies.length < 2) {
+                    suggestionsContainer.innerHTML = `<div style="color:var(--muted); font-size:12px; text-align:center; padding:10px;">Select at least 2 active strategies to receive smart diversification suggestions.</div>`;
+                } else {
+                    let suggestionsHtml = '';
+                    const alerts = [];
+                    const heroes = [];
+                    
+                    // 1. High Drawdown Alerts
+                    activeStrategies.forEach(name => {
+                        const s = DATASET.strategies.find(st => st.name === name);
+                        if (s.DrawdownPct > 20) {
+                            alerts.push({
+                                type: 'danger',
+                                icon: '⚠️',
+                                title: `High Drawdown Alert: ${name}`,
+                                desc: `Historical drawdown is <strong>${s.DrawdownPct.toFixed(1)}%</strong>. Consider allocating less capital to this strategy to control portfolio-level risk.`
+                            });
+                        }
+                    });
+                    
+                    // 2. Highly Correlated Pairs (Overlapping Risk)
+                    for (let i = 0; i < activeStrategies.length; i++) {
+                        for (let j = i + 1; j < activeStrategies.length; j++) {
+                            const name1 = activeStrategies[i];
+                            const name2 = activeStrategies[j];
+                            const corr = DATASET.correlation_matrix[name1]?.[name2] || 0;
+                            if (corr > 0.5) {
+                                alerts.push({
+                                    type: 'warning',
+                                    icon: '⚡',
+                                    title: `High Overlap Risk`,
+                                    desc: `<strong>${name1}</strong> and <strong>${name2}</strong> are highly correlated (<strong>${corr.toFixed(2)}</strong>). Keeping both increases concentration risk in similar trends. Suggestion: disable one or reduce its lot size.`
+                                });
+                            }
+                        }
+                    }
+                    
+                    // 3. Best Portfolio Diversifier (Lowest Avg Correlation with other ACTIVE strategies)
+                    let bestDiversifier = '';
+                    let minAvgCorr = 999;
+                    activeStrategies.forEach(name1 => {
+                        let totalCorr = 0;
+                        let count = 0;
+                        activeStrategies.forEach(name2 => {
+                            if (name1 !== name2) {
+                                totalCorr += DATASET.correlation_matrix[name1]?.[name2] || 0;
+                                count++;
+                            }
+                        });
+                        const avgCorr = count > 0 ? totalCorr / count : 0;
+                        if (avgCorr < minAvgCorr) {
+                            minAvgCorr = avgCorr;
+                            bestDiversifier = name1;
+                        }
+                    });
+                    
+                    if (bestDiversifier && minAvgCorr < 0.2) {
+                        heroes.push({
+                            type: 'success',
+                            icon: '🛡️',
+                            title: `Best Portfolio Diversifier: ${bestDiversifier}`,
+                            desc: `This strategy has a very low average correlation (<strong>${minAvgCorr.toFixed(2)}</strong>) with your other selected assets. It acts as an excellent hedge during market transitions.`
+                        });
+                    }
+                    
+                    // 4. Portfolio Safe Anchor (Lowest Drawdown with high consistency)
+                    let safestAnchor = '';
+                    let minDd = 999;
+                    activeStrategies.forEach(name => {
+                        const s = DATASET.strategies.find(st => st.name === name);
+                        if (s.DrawdownPct < minDd) {
+                            minDd = s.DrawdownPct;
+                            safestAnchor = name;
+                        }
+                    });
+                    
+                    if (safestAnchor && minDd < 12) {
+                        heroes.push({
+                            type: 'info',
+                            icon: '⚓',
+                            title: `Safe Anchor Stock: ${safestAnchor}`,
+                            desc: `With a historical drawdown of only <strong>${minDd.toFixed(1)}%</strong>, this strategy stabilizes your portfolio volatility.`
+                        });
+                    }
+
+                    // Render suggestions
+                    if (alerts.length === 0 && heroes.length === 0) {
+                        suggestionsHtml += `
+                            <div style="background:rgba(0, 230, 118, 0.05); border:1px solid rgba(0, 230, 118, 0.15); border-radius:6px; padding:10px 14px; display:flex; gap:10px; align-items:flex-start;">
+                                <span style="font-size:18px;">✅</span>
+                                <div style="display:flex; flex-direction:column; gap:2px;">
+                                    <span style="font-size:12px; font-weight:700; color:var(--emerald);">Excellent Balance!</span>
+                                    <span style="font-size:11px; color:var(--text); opacity:0.85;">Your selected active portfolio contains highly diversified assets with low overlapping correlations and well-contained drawdowns. No major risk alerts.</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // Display up to 2 key risk alerts and 2 helper highlights to keep it compact
+                        const displayedAlerts = alerts.slice(0, 2);
+                        const displayedHeroes = heroes.slice(0, 2);
+                        
+                        displayedAlerts.forEach(a => {
+                            const borderColor = a.type === 'danger' ? 'rgba(255,45,85,0.3)' : 'rgba(255,159,10,0.3)';
+                            const bgColor = a.type === 'danger' ? 'rgba(255,45,85,0.06)' : 'rgba(255,159,10,0.06)';
+                            const titleColor = a.type === 'danger' ? 'var(--rose)' : 'var(--amber)';
+                            
+                            suggestionsHtml += `
+                                <div style="background:${bgColor}; border:1px solid ${borderColor}; border-radius:6px; padding:8px 12px; display:flex; gap:10px; align-items:flex-start;">
+                                    <span style="font-size:16px;">${a.icon}</span>
+                                    <div style="display:flex; flex-direction:column; gap:1px; min-width:0; flex:1;">
+                                        <span style="font-size:11px; font-weight:700; color:${titleColor};">${a.title}</span>
+                                        <span style="font-size:10px; color:var(--text); opacity:0.85; line-height:1.4;">${a.desc}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        displayedHeroes.forEach(h => {
+                            const borderColor = h.type === 'success' ? 'rgba(0, 255, 204, 0.3)' : 'rgba(0, 230, 118, 0.3)';
+                            const bgColor = h.type === 'success' ? 'rgba(0, 255, 204, 0.05)' : 'rgba(0, 230, 118, 0.05)';
+                            const titleColor = h.type === 'success' ? 'var(--cyan)' : 'var(--emerald)';
+                            
+                            suggestionsHtml += `
+                                <div style="background:${bgColor}; border:1px solid ${borderColor}; border-radius:6px; padding:8px 12px; display:flex; gap:10px; align-items:flex-start;">
+                                    <span style="font-size:16px;">${h.icon}</span>
+                                    <div style="display:flex; flex-direction:column; gap:1px; min-width:0; flex:1;">
+                                        <span style="font-size:11px; font-weight:700; color:${titleColor};">${h.title}</span>
+                                        <span style="font-size:10px; color:var(--text); opacity:0.85; line-height:1.4;">${h.desc}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    suggestionsContainer.innerHTML = suggestionsHtml;
+                }
+            }
+            renderScoreTable();
+            renderCombinedLedgerAndAnalytics();
         }
 
         // Render Chart using Chart.js
@@ -1864,21 +2496,71 @@ html_code = """<!DOCTYPE html>
                 chartInstance.destroy();
             }
 
+            // Calculate dynamic min and max bounds for high vertical resolution of P&L fluctuations
+            let yMin = undefined;
+            let yMax = undefined;
+            if (equitySeries && equitySeries.length > 0) {
+                const minEquity = Math.min(...equitySeries);
+                const maxEquity = Math.max(...equitySeries);
+                const range = maxEquity - minEquity;
+                
+                if (range === 0) {
+                    yMin = Math.floor(minEquity * 0.95);
+                    yMax = Math.ceil(minEquity * 1.05);
+                } else {
+                    yMin = Math.floor(minEquity - range * 0.15);
+                    yMax = Math.ceil(maxEquity + range * 0.15);
+                }
+                
+                // Keep min non-negative if starting capital and all equity values are non-negative
+                if (yMin < 0 && minEquity >= 0) {
+                    yMin = 0;
+                }
+            }
+
+            const datasets = [{
+                label: 'Simulated Portfolio Value (INR)',
+                data: equitySeries,
+                borderColor: '#00ffcc',
+                borderWidth: 2.5,
+                backgroundColor: 'rgba(0, 255, 204, 0.05)',
+                fill: true,
+                tension: 0.15,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                yAxisID: 'y'
+            }];
+
+            if (showDrawdownOnChart) {
+                let peak = selectedCapital;
+                const drawdownPctSeries = [];
+                for (let i = 0; i < equitySeries.length; i++) {
+                    const val = equitySeries[i];
+                    if (val > peak) {
+                        peak = val;
+                    }
+                    const ddPct = peak > 0 ? ((val - peak) / peak) * 100 : 0.0;
+                    drawdownPctSeries.push(ddPct);
+                }
+
+                datasets.push({
+                    label: 'Drawdown (%)',
+                    type: 'bar',
+                    data: drawdownPctSeries,
+                    backgroundColor: 'rgba(239, 83, 80, 0.25)', // beautiful premium light red
+                    borderColor: 'rgba(239, 83, 80, 0.8)',      // premium red border
+                    borderWidth: 1.5,
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.8,
+                    yAxisID: 'y1'
+                });
+            }
+
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: dates,
-                    datasets: [{
-                        label: 'Simulated Portfolio Value (INR)',
-                        data: equitySeries,
-                        borderColor: '#00ffcc',
-                        borderWidth: 2.5,
-                        backgroundColor: 'rgba(0, 255, 204, 0.05)',
-                        fill: true,
-                        tension: 0.15,
-                        pointRadius: 0,
-                        pointHoverRadius: 5
-                    }]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
@@ -1893,7 +2575,11 @@ html_code = """<!DOCTYPE html>
                                         label += ': ';
                                     }
                                     if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(context.parsed.y);
+                                        if (context.dataset.yAxisID === 'y1') {
+                                            label += context.parsed.y.toFixed(2) + '%';
+                                        } else {
+                                            label += new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(context.parsed.y);
+                                        }
                                     }
                                     return label;
                                 }
@@ -1906,6 +2592,9 @@ html_code = """<!DOCTYPE html>
                             ticks: { color: '#8a96a8', font: { size: 9, family: 'JetBrains Mono' } }
                         },
                         y: {
+                            position: 'left',
+                            min: yMin,
+                            max: yMax,
                             grid: { color: 'rgba(255, 255, 255, 0.03)' },
                             ticks: { 
                                 color: '#8a96a8', 
@@ -1914,10 +2603,31 @@ html_code = """<!DOCTYPE html>
                                     return '₹' + (value / 100000).toFixed(1) + 'L';
                                 }
                             }
+                        },
+                        y1: {
+                            position: 'right',
+                            display: showDrawdownOnChart,
+                            grid: { drawOnChartArea: false },
+                            max: 0,
+                            suggestedMin: -10,
+                            ticks: {
+                                color: '#ef5350',
+                                font: { size: 9, family: 'JetBrains Mono' },
+                                callback: function(value) {
+                                    return value.toFixed(1) + '%';
+                                }
+                            }
                         }
                     }
                 }
             });
+        }
+
+        function toggleDrawdownCurve(checked) {
+            showDrawdownOnChart = checked;
+            if (lastFilteredDates.length > 0 && lastPortfolioEquity.length > 0) {
+                renderChart(lastFilteredDates, lastPortfolioEquity);
+            }
         }
 
         // ----------------------------------------------------
@@ -2031,17 +2741,474 @@ html_code = """<!DOCTYPE html>
             renderLedgerTable();
         }
 
-        // Helper to extract YYYY-MM from exit date string
+        // ----------------------------------------------------
+        // 5B. Combined Portfolio Ledger & Advanced Risk Analytics (JS)
+        // ----------------------------------------------------
+        function switchLedgerTab(tab) {
+            const tabs = ['single', 'combined', 'analytics'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const container = document.getElementById(`ledger-${t}-container`);
+                const filters = document.getElementById(`${t}-ledger-filters`) || document.getElementById(`${t}-filters`);
+                
+                if (t === tab) {
+                    btn.style.borderBottom = '2px solid var(--cyan)';
+                    btn.style.color = 'var(--cyan)';
+                    btn.classList.add('active');
+                    container.style.display = 'block';
+                    if (filters) filters.style.display = 'flex';
+                } else {
+                    btn.style.borderBottom = '2px solid transparent';
+                    btn.style.color = 'var(--muted)';
+                    btn.classList.remove('active');
+                    container.style.display = 'none';
+                    if (filters) filters.style.display = 'none';
+                }
+            });
+            
+            if (tab === 'combined' || tab === 'analytics') {
+                renderCombinedLedgerAndAnalytics();
+            }
+        }
+
+        function parseDateObject(dateStr) {
+            if (!dateStr) return new Date(0);
+            const parts = dateStr.trim().split(' ');
+            const datePart = parts[0];
+            const timePart = parts[1] || '00:00:00';
+            
+            let day, month, year;
+            if (datePart.includes('-')) {
+                const dParts = datePart.split('-');
+                if (dParts[0].length === 4) {
+                    year = parseInt(dParts[0], 10);
+                    month = parseInt(dParts[1], 10) - 1;
+                    day = parseInt(dParts[2], 10);
+                } else {
+                    day = parseInt(dParts[0], 10);
+                    month = parseInt(dParts[1], 10) - 1;
+                    year = parseInt(dParts[2], 10);
+                }
+            } else if (datePart.includes('/')) {
+                const dParts = datePart.split('/');
+                if (dParts[0].length === 4) {
+                    year = parseInt(dParts[0], 10);
+                    month = parseInt(dParts[1], 10) - 1;
+                    day = parseInt(dParts[2], 10);
+                } else {
+                    day = parseInt(dParts[0], 10);
+                    month = parseInt(dParts[1], 10) - 1;
+                    year = parseInt(dParts[2], 10);
+                }
+            } else if (datePart.length === 8 && !isNaN(datePart)) {
+                year = parseInt(datePart.substring(0, 4), 10);
+                month = parseInt(datePart.substring(4, 6), 10) - 1;
+                day = parseInt(datePart.substring(6, 8), 10);
+            } else {
+                return new Date(dateStr);
+            }
+            
+            const tParts = timePart.split(':');
+            const hour = parseInt(tParts[0] || 0, 10);
+            const min = parseInt(tParts[1] || 0, 10);
+            const sec = parseInt(tParts[2] || 0, 10);
+            
+            return new Date(year, month, day, hour, min, sec);
+        }
+
+        // Helper to extract YYYY-MM from exit date string - robust to DD-MM-YYYY and YYYY-MM-DD
         function getTradeYearMonth(dateStr) {
             if (!dateStr) return '';
             const datePart = dateStr.split(' ')[0];
-            const parts = datePart.split('-');
-            if (parts.length === 3) {
-                const year = parts[2];
-                const month = parts[1]; // "01", "02", etc.
+            let year = '', month = '';
+            if (datePart.includes('-')) {
+                const parts = datePart.split('-');
+                if (parts[0].length === 4) {
+                    year = parts[0];
+                    month = parts[1];
+                } else {
+                    year = parts[2];
+                    month = parts[1];
+                }
+            } else if (datePart.includes('/')) {
+                const parts = datePart.split('/');
+                if (parts[0].length === 4) {
+                    year = parts[0];
+                    month = parts[1];
+                } else {
+                    year = parts[2];
+                    month = parts[1];
+                }
+            } else if (datePart.length === 8 && !isNaN(datePart)) {
+                year = datePart.substring(0, 4);
+                month = datePart.substring(4, 6);
+            }
+            if (year && month) {
                 return `${year}-${month}`;
             }
             return '';
+        }
+
+        function renderCombinedLedgerAndAnalytics() {
+            const combinedBody = document.getElementById('combined-ledger-body');
+            const activeCountEl = document.getElementById('combined-active-count');
+            
+            if (activeCountEl) {
+                activeCountEl.textContent = activeStrategies.length;
+            }
+
+            if (activeStrategies.length === 0) {
+                if (combinedBody) {
+                    combinedBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">No active strategies selected in portfolio.</td></tr>';
+                }
+                
+                // Clear analytics displays
+                document.getElementById('combined-net-profit').textContent = '₹0';
+                document.getElementById('combined-win-rate').textContent = '0.0%';
+                document.getElementById('combined-profit-factor').textContent = '0.00';
+                document.getElementById('combined-trade-count').textContent = '0';
+                
+                document.getElementById('analytics-win-streak').textContent = '0 trades';
+                document.getElementById('analytics-win-streak-detail').textContent = 'Total gain: ₹0';
+                document.getElementById('analytics-loss-streak').textContent = '0 trades';
+                document.getElementById('analytics-loss-streak-detail').textContent = 'Total loss: ₹0';
+                document.getElementById('analytics-max-win').textContent = '₹0';
+                document.getElementById('analytics-max-win-strat').textContent = '--';
+                document.getElementById('analytics-max-loss').textContent = '₹0';
+                document.getElementById('analytics-max-loss-strat').textContent = '--';
+                
+                if (document.getElementById('port-max-win-val')) {
+                    document.getElementById('port-max-win-val').textContent = '₹0';
+                    document.getElementById('port-max-win-desc').textContent = '--';
+                    document.getElementById('port-max-loss-val').textContent = '₹0';
+                    document.getElementById('port-max-loss-desc').textContent = '--';
+                }
+                
+                document.getElementById('analytics-top-profits-body').innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted); padding:10px;">No data</td></tr>';
+                document.getElementById('analytics-top-losses-body').innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted); padding:10px;">No data</td></tr>';
+                document.getElementById('analytics-drawdowns-body').innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--muted); padding:10px;">No drawdown epochs recorded</td></tr>';
+                return;
+            }
+
+            // 1. Gather all trades across active strategies, scaling them appropriately
+            let mergedTrades = [];
+            activeStrategies.forEach(name => {
+                const s = DATASET.strategies.find(st => st.name === name);
+                if (!s || !s.trades) return;
+                
+                const lots = allocatedLots[name] || 0;
+                const lotsize = strategyLotSizes[name] || 250;
+                const simulatedQty = lots * lotsize;
+                const baseQty = s.BaseQty || 1.0;
+                const scaleFactor = baseQty > 0 ? simulatedQty / baseQty : 0;
+                
+                s.trades.forEach(t => {
+                    mergedTrades.push({
+                        strategy: s.name,
+                        trade_no: t.trade_no,
+                        type: t.type,
+                        entry_price: t.entry_price,
+                        entry_time: t.entry_time,
+                        exit_price: t.exit_price,
+                        exit_time: t.exit_time,
+                        qty: t.qty * scaleFactor,
+                        pnl_inr: t.pnl_inr * scaleFactor,
+                        pnl_pct: t.pnl_pct,
+                        lots: lots
+                    });
+                });
+            });
+
+            // 2. Filter by selected simulation date range
+            const startMonthVal = document.getElementById('filter-start-month') ? document.getElementById('filter-start-month').value : DATASET.dates[0];
+            const endMonthVal = document.getElementById('filter-end-month') ? document.getElementById('filter-end-month').value : DATASET.dates[DATASET.dates.length - 1];
+            
+            let filteredTrades = mergedTrades.filter(t => {
+                const ym = getTradeYearMonth(t.exit_time);
+                return ym >= startMonthVal && ym <= endMonthVal;
+            });
+
+            // 3. Sort chronologically ascending for streaks and drawdown simulations
+            filteredTrades.sort((a, b) => parseDateObject(a.exit_time) - parseDateObject(b.exit_time));
+
+            // 4. Perform Advanced Analytics calculations on the chronologically sorted trades
+            let totalPnl = 0;
+            let winsCount = 0;
+            let lossesCount = 0;
+            let grossProfits = 0;
+            let grossLosses = 0;
+            
+            let maxWinStreak = 0;
+            let maxLossStreak = 0;
+            let currentWinStreak = 0;
+            let currentLossStreak = 0;
+            let winStreakPnl = 0;
+            let lossStreakPnl = 0;
+            let maxWinStreakPnl = 0;
+            let maxLossStreakPnl = 0;
+            
+            let largestWinVal = 0;
+            let largestWinStrat = '--';
+            let largestLossVal = 0;
+            let largestLossStrat = '--';
+
+            filteredTrades.forEach(t => {
+                const pnl = t.pnl_inr;
+                totalPnl += pnl;
+                
+                if (pnl > 0) {
+                    winsCount++;
+                    grossProfits += pnl;
+                    
+                    // Win Streak Calculation
+                    currentWinStreak++;
+                    winStreakPnl += pnl;
+                    if (currentWinStreak > maxWinStreak) {
+                        maxWinStreak = currentWinStreak;
+                        maxWinStreakPnl = winStreakPnl;
+                    }
+                    currentLossStreak = 0;
+                    lossStreakPnl = 0;
+                    
+                    // Largest Single Win
+                    if (pnl > largestWinVal) {
+                        largestWinVal = pnl;
+                        largestWinStrat = `${t.strategy} (${t.exit_time})`;
+                    }
+                } else if (pnl < 0) {
+                    lossesCount++;
+                    grossLosses += Math.abs(pnl);
+                    
+                    // Loss Streak Calculation
+                    currentLossStreak++;
+                    lossStreakPnl += pnl;
+                    if (currentLossStreak > maxLossStreak) {
+                        maxLossStreak = currentLossStreak;
+                        maxLossStreakPnl = lossStreakPnl;
+                    }
+                    currentWinStreak = 0;
+                    winStreakPnl = 0;
+                    
+                    // Largest Single Loss
+                    if (Math.abs(pnl) > largestLossVal) {
+                        largestLossVal = Math.abs(pnl);
+                        largestLossStrat = `${t.strategy} (${t.exit_time})`;
+                    }
+                }
+            });
+
+            const totalTrades = filteredTrades.length;
+            const winRate = totalTrades > 0 ? (winsCount / totalTrades) * 100 : 0;
+            const profitFactor = grossLosses > 0 ? grossProfits / grossLosses : grossProfits > 0 ? 99.9 : 0;
+
+            // Drawdown Epochs Simulation
+            let runningEquity = selectedCapital;
+            let peakEquity = selectedCapital;
+            let peakTime = 'Start';
+            let inDrawdown = false;
+            let currentEpoch = null;
+            const epochs = [];
+
+            filteredTrades.forEach(t => {
+                runningEquity += t.pnl_inr;
+                
+                if (runningEquity >= peakEquity) {
+                    if (inDrawdown && currentEpoch) {
+                        // Recovered!
+                        currentEpoch.recoveryTime = t.exit_time;
+                        currentEpoch.status = 'Recovered';
+                        epochs.push(currentEpoch);
+                        inDrawdown = false;
+                        currentEpoch = null;
+                    }
+                    peakEquity = runningEquity;
+                    peakTime = t.exit_time;
+                } else {
+                    const ddInr = peakEquity - runningEquity;
+                    const ddPct = (ddInr / peakEquity) * 100;
+                    
+                    if (!inDrawdown) {
+                        inDrawdown = true;
+                        currentEpoch = {
+                            peakTime: peakTime,
+                            peakEquity: peakEquity,
+                            troughTime: t.exit_time,
+                            troughEquity: runningEquity,
+                            maxDropInr: ddInr,
+                            maxDropPct: ddPct,
+                            recoveryTime: 'Ongoing',
+                            status: 'Ongoing',
+                            tradeCount: 1
+                        };
+                    } else if (currentEpoch) {
+                        currentEpoch.tradeCount++;
+                        if (ddInr > currentEpoch.maxDropInr) {
+                            currentEpoch.maxDropInr = ddInr;
+                            currentEpoch.maxDropPct = ddPct;
+                            currentEpoch.troughTime = t.exit_time;
+                            currentEpoch.troughEquity = runningEquity;
+                        }
+                    }
+                }
+            });
+
+            if (inDrawdown && currentEpoch) {
+                epochs.push(currentEpoch);
+            }
+
+            // Top 5 Drawdowns by INR drop
+            const worstEpochs = [...epochs]
+                .sort((a, b) => b.maxDropInr - a.maxDropInr)
+                .slice(0, 5);
+
+            // Top 5 profits & Top 5 losses
+            const topProfits = [...filteredTrades]
+                .filter(t => t.pnl_inr > 0)
+                .sort((a, b) => b.pnl_inr - a.pnl_inr)
+                .slice(0, 5);
+                
+            const topLosses = [...filteredTrades]
+                .filter(t => t.pnl_inr < 0)
+                .sort((a, b) => a.pnl_inr - b.pnl_inr)
+                .slice(0, 5);
+
+            // 5. Update Combined Metrics Summary
+            document.getElementById('combined-net-profit').textContent = `₹${Math.round(totalPnl).toLocaleString("en-IN")}`;
+            document.getElementById('combined-net-profit').style.color = totalPnl >= 0 ? 'var(--emerald)' : 'var(--rose)';
+            document.getElementById('combined-win-rate').textContent = `${winRate.toFixed(1)}%`;
+            document.getElementById('combined-profit-factor').textContent = profitFactor.toFixed(2);
+            document.getElementById('combined-trade-count').textContent = totalTrades;
+
+            // 6. Update Analytics Streak Summary & Tables
+            document.getElementById('analytics-win-streak').textContent = `${maxWinStreak} trades`;
+            document.getElementById('analytics-win-streak-detail').textContent = `Total gain: ₹${Math.round(maxWinStreakPnl).toLocaleString("en-IN")}`;
+            document.getElementById('analytics-loss-streak').textContent = `${maxLossStreak} trades`;
+            document.getElementById('analytics-loss-streak-detail').textContent = `Total loss: ₹${Math.round(Math.abs(maxLossStreakPnl)).toLocaleString("en-IN")}`;
+            
+            document.getElementById('analytics-max-win').textContent = `₹${Math.round(largestWinVal).toLocaleString("en-IN")}`;
+            document.getElementById('analytics-max-win-strat').textContent = largestWinStrat;
+            document.getElementById('analytics-max-loss').textContent = `₹${Math.round(largestLossVal).toLocaleString("en-IN")}`;
+            document.getElementById('analytics-max-loss-strat').textContent = largestLossStrat;
+
+            // Also update the main top Hero metric cards for high visibility
+            const portMaxWinValEl = document.getElementById('port-max-win-val');
+            const portMaxWinDescEl = document.getElementById('port-max-win-desc');
+            const portMaxLossValEl = document.getElementById('port-max-loss-val');
+            const portMaxLossDescEl = document.getElementById('port-max-loss-desc');
+            
+            if (portMaxWinValEl) {
+                portMaxWinValEl.textContent = `₹${Math.round(largestWinVal).toLocaleString("en-IN")}`;
+                portMaxWinDescEl.textContent = largestWinStrat;
+            }
+            if (portMaxLossValEl) {
+                portMaxLossValEl.textContent = `-₹${Math.round(largestLossVal).toLocaleString("en-IN")}`;
+                portMaxLossDescEl.textContent = largestLossStrat;
+            }
+
+            // Render Top 5 Profits Table
+            const profitsBody = document.getElementById('analytics-top-profits-body');
+            if (topProfits.length === 0) {
+                profitsBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted); padding:10px;">No profitable trades recorded.</td></tr>';
+            } else {
+                profitsBody.innerHTML = topProfits.map(t => `
+                    <tr>
+                        <td><strong>${t.strategy}</strong></td>
+                        <td style="color:var(--muted); font-size:10px;">${t.exit_time}</td>
+                        <td>${Math.round(t.qty).toLocaleString("en-IN")} (${t.lots.toFixed(1).replace('.0','')} lots)</td>
+                        <td style="color:var(--emerald); font-weight:600;">₹${Math.round(t.pnl_inr).toLocaleString("en-IN")}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Render Top 5 Losses Table
+            const lossesBody = document.getElementById('analytics-top-losses-body');
+            if (topLosses.length === 0) {
+                lossesBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted); padding:10px;">No losing trades recorded.</td></tr>';
+            } else {
+                lossesBody.innerHTML = topLosses.map(t => `
+                    <tr>
+                        <td><strong>${t.strategy}</strong></td>
+                        <td style="color:var(--muted); font-size:10px;">${t.exit_time}</td>
+                        <td>${Math.round(t.qty).toLocaleString("en-IN")} (${t.lots.toFixed(1).replace('.0','')} lots)</td>
+                        <td style="color:var(--rose); font-weight:600;">₹${Math.round(Math.abs(t.pnl_inr)).toLocaleString("en-IN")}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Render Drawdown Epochs Table
+            const drawdownsBody = document.getElementById('analytics-drawdowns-body');
+            if (worstEpochs.length === 0) {
+                drawdownsBody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--muted); padding:15px;">No historical drawdown periods detected.</td></tr>';
+            } else {
+                drawdownsBody.innerHTML = worstEpochs.map((ep, idx) => {
+                    const statusClass = ep.status === 'Recovered' ? 'status-badge kept' : 'status-badge rejected';
+                    return `
+                        <tr>
+                            <td><strong>Epoch #${idx + 1}</strong></td>
+                            <td style="color:var(--muted); font-size:10px;">${ep.peakTime}</td>
+                            <td style="color:var(--muted); font-size:10px;">${ep.troughTime}</td>
+                            <td style="color:var(--muted); font-size:10px;">${ep.recoveryTime}</td>
+                            <td>${ep.tradeCount} trades</td>
+                            <td>₹${Math.round(ep.peakEquity).toLocaleString("en-IN")}</td>
+                            <td style="color:var(--rose); font-weight:600;">₹${Math.round(ep.maxDropInr).toLocaleString("en-IN")}</td>
+                            <td style="color:var(--rose); font-weight:600;">${ep.maxDropPct.toFixed(2)}%</td>
+                            <td><span class="${statusClass}" style="padding:2px 6px; font-size:10px;">${ep.status}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // 7. Render Combined Ledger Table (Tab 2)
+            if (combinedBody) {
+                const combTypeFilter = document.getElementById('combined-type-filter').value;
+                const combPnlFilter = document.getElementById('combined-pnl-filter').value;
+                const combSearchVal = document.getElementById('combined-search').value.toLowerCase();
+                
+                // Display in DESCENDING order (latest exit times first) for ledger standard view
+                let ledgerList = [...filteredTrades];
+                ledgerList.sort((a, b) => parseDateObject(b.exit_time) - parseDateObject(a.exit_time));
+                
+                // Apply filters
+                if (combTypeFilter !== 'all') {
+                    ledgerList = ledgerList.filter(t => t.type === combTypeFilter);
+                }
+                
+                if (combPnlFilter === 'win') {
+                    ledgerList = ledgerList.filter(t => t.pnl_inr > 0);
+                } else if (combPnlFilter === 'loss') {
+                    ledgerList = ledgerList.filter(t => t.pnl_inr < 0);
+                }
+                
+                if (combSearchVal) {
+                    ledgerList = ledgerList.filter(t => 
+                        t.strategy.toLowerCase().includes(combSearchVal) || 
+                        t.entry_time.toLowerCase().includes(combSearchVal) || 
+                        t.exit_time.toLowerCase().includes(combSearchVal)
+                    );
+                }
+
+                if (ledgerList.length === 0) {
+                    combinedBody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">No trades matched the filters.</td></tr>';
+                } else {
+                    combinedBody.innerHTML = ledgerList.map(t => {
+                        const typeClass = t.type === 'Long' ? 'status-badge kept' : 'status-badge rejected';
+                        const pnlStyle = t.pnl_inr >= 0 ? 'color:var(--emerald); font-weight:600;' : 'color:var(--rose); font-weight:600;';
+                        
+                        return `
+                            <tr>
+                                <td style="color:var(--muted); font-size:11px;"><strong>${t.exit_time}</strong></td>
+                                <td><strong>${t.strategy}</strong></td>
+                                <td><span class="${typeClass}" style="padding:2px 6px; font-size:10px;">${t.type}</span></td>
+                                <td style="font-size:11px;">₹${t.entry_price.toLocaleString("en-IN", {minimumFractionDigits:2})}<br/><span style="color:var(--muted); font-size:9px;">${t.entry_time}</span></td>
+                                <td style="font-size:11px;">₹${t.exit_price.toLocaleString("en-IN", {minimumFractionDigits:2})}<br/><span style="color:var(--muted); font-size:9px;">${t.exit_time}</span></td>
+                                <td>${t.lots} lots</td>
+                                <td>${Math.round(t.qty).toLocaleString("en-IN")} Qty</td>
+                                <td style="${pnlStyle}">₹${Math.round(t.pnl_inr).toLocaleString("en-IN")}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
         }
 
         // Handle dropdown month selection changes
