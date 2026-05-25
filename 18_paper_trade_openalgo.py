@@ -913,7 +913,7 @@ while True:
             if isinstance(base_q, dict) and base_q.get('status') == 'success':
                 base_ltp = round(float(base_q['data']['ltp']), 2)
         except:
-            base_ltp = None
+            pass
             
         hit = False
         if base_opt_type == 'CE':
@@ -937,14 +937,14 @@ while True:
             if isinstance(ce_q, dict) and ce_q.get('status') == 'success':
                 strangle_ce_ltp = round(float(ce_q['data']['ltp']), 2)
         except:
-            strangle_ce_ltp = None
+            pass
             
         try:
             pe_q = client.quotes(symbol=strangle_pe_symbol, exchange="NFO")
             if isinstance(pe_q, dict) and pe_q.get('status') == 'success':
                 strangle_pe_ltp = round(float(pe_q['data']['ltp']), 2)
         except:
-            strangle_pe_ltp = None
+            pass
             
         ce_price = strangle_ce_ltp if strangle_ce_ltp else strangle_ce_entry_price
         pe_price = strangle_pe_ltp if strangle_pe_ltp else strangle_pe_entry_price
