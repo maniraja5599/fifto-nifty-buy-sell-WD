@@ -1226,8 +1226,17 @@ html_code = """<!DOCTYPE html>
 
                 <!-- LOT ALLOCATION CALCULATOR -->
                 <div class="card">
-                    <div class="card-title">Dynamic Lot & Capital Allocation</div>
-                    <div class="card-subtitle">Calculated dynamically in real-time based on allocation weights and asset-class margin margins.</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <div class="card-title" style="margin-bottom:0;">Dynamic Lot & Capital Allocation</div>
+                        <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:4px 10px; border-radius:20px;">
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-fractional-lots" checked onchange="toggleFractionalLots(this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                            <span style="font-size:11px; font-weight:700; color:var(--cyan); user-select:none;" id="fractional-lots-label">Fractional Lots (100% Capital)</span>
+                        </div>
+                    </div>
+                    <div class="card-subtitle">Calculated dynamically in real-time based on allocation weights and asset-class margin margins. Toggle Fractional to simulate continuous capital scaling vs strict integer lots.</div>
                     <table class="lots-table">
                         <thead>
                             <tr>
@@ -1638,6 +1647,7 @@ html_code = """<!DOCTYPE html>
         // Manual Custom allocations
         let allocationMode = 'auto';
         let selectedPreset = 'sharpe'; // 'sharpe', 'min_vol', 'equal'
+        let useFractionalLots = true; // default is true for 100% capital utilization
         const strategyWeights = {};
         const strategyMargins = {};
         const strategyLotSizes = {};
@@ -1785,6 +1795,23 @@ html_code = """<!DOCTYPE html>
                 });
             }
             
+            renderStrategySelector();
+            runSimulation();
+        }
+
+        // Toggle Fractional Lots / Continuous Sizing Mode
+        function toggleFractionalLots(checked) {
+            useFractionalLots = checked;
+            const label = document.getElementById('fractional-lots-label');
+            if (label) {
+                if (checked) {
+                    label.textContent = "Fractional Lots (100% Capital)";
+                    label.style.color = "var(--cyan)";
+                } else {
+                    label.textContent = "Strict Integer Lots (Realistic)";
+                    label.style.color = "var(--muted)";
+                }
+            }
             renderStrategySelector();
             runSimulation();
         }
@@ -2225,7 +2252,14 @@ html_code = """<!DOCTYPE html>
                 const margin = strategyMargins[name] || 120000;
                 const lotsize = strategyLotSizes[name] || 250;
                 const isMcx = name.includes('MCX');
-                const lots = isMcx ? parseFloat((cap / margin).toFixed(2)) : Math.floor(cap / margin);
+                
+                let lots = 0;
+                if (useFractionalLots) {
+                    lots = parseFloat((cap / margin).toFixed(2));
+                } else {
+                    lots = isMcx ? parseFloat((cap / margin).toFixed(2)) : Math.floor(cap / margin);
+                }
+                
                 allocatedLots[name] = lots;
                 const totalQty = lots * lotsize;
                 
