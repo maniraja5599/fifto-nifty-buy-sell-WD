@@ -1418,7 +1418,42 @@
 
         <!-- Historical Logs Table Card -->
         <div class="card history-card">
-            <h3 class="form-title" style="margin-bottom: 0;">Trade Execution Log History</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--panel-border); padding-bottom: 16px;">
+                <h3 class="form-title" style="margin: 0; border: none; padding: 0;">Trade Execution Log History</h3>
+                
+                <!-- Strategy Filter Controls -->
+                <div class="filter-controls" style="display: flex; gap: 8px;">
+                    <button class="filter-btn active" onclick="filterLogs('ALL')" id="filterBtnALL" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-main); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">ALL</button>
+                    <button class="filter-btn" onclick="filterLogs('BUY')" id="filterBtnBUY" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">OPTION BUYING (BASE)</button>
+                    <button class="filter-btn" onclick="filterLogs('SELL')" id="filterBtnSELL" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">OPTION SELLING (STRANGLE)</button>
+                </div>
+            </div>
+
+            <!-- Dynamic Strategy Performance Summary -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;" id="performanceSummaryContainer">
+                <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
+                    <div>
+                        <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Buying (BASE) Net P&L</div>
+                        <div id="summaryBuyPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
+                    </div>
+                    <span class="badge badge-target" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">BUY</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
+                    <div>
+                        <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Selling (Strangle) Net P&L</div>
+                        <div id="summarySellPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
+                    </div>
+                    <span class="badge badge-strangle" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">STRANGLE</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
+                    <div>
+                        <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Combined Total Net P&L</div>
+                        <div id="summaryTotalPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
+                    </div>
+                    <span class="badge badge-eod" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">COMBINED</span>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table>
                     <thead>
@@ -1913,6 +1948,161 @@
             }
         }
 
+        // Global variables for log history & filtering
+        window.allLogs = [];
+        window.currentFilter = 'ALL';
+
+        function filterLogs(filterType) {
+            window.currentFilter = filterType;
+            
+            // Manage active styles of filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.color = 'var(--text-muted)';
+                btn.style.background = 'rgba(255,255,255,0.03)';
+                btn.style.borderColor = 'var(--panel-border)';
+                btn.style.boxShadow = 'none';
+            });
+            
+            const activeBtn = document.getElementById(`filterBtn${filterType}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.style.color = 'var(--text-main)';
+                activeBtn.style.background = 'var(--primary-glow)';
+                activeBtn.style.borderColor = 'var(--primary)';
+                activeBtn.style.boxShadow = '0 0 10px rgba(139, 92, 246, 0.2)';
+            }
+            
+            renderFilteredLogs();
+        }
+
+        function renderFilteredLogs() {
+            const body = document.getElementById('logsTableBody');
+            body.innerHTML = '';
+            
+            const logs = window.allLogs || [];
+            
+            // Calculate strategy-wise dynamic Net P&Ls from ALL logged trades
+            let buyNetPnl = 0.0;
+            let sellNetPnl = 0.0;
+            
+            logs.forEach(row => {
+                const pnl = parseFloat(row.pnl_rs) || 0.0;
+                if (row.opt_type === 'STRANGLE') {
+                    sellNetPnl += pnl;
+                } else {
+                    buyNetPnl += pnl;
+                }
+            });
+            
+            const totalNetPnl = buyNetPnl + sellNetPnl;
+            
+            // Helper to format values
+            const formatSummaryPnl = (val, elId) => {
+                const el = document.getElementById(elId);
+                if (!el) return;
+                const sign = val >= 0 ? '+' : '';
+                el.textContent = `${sign}₹${val.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+                el.style.color = val >= 0 ? 'var(--success)' : 'var(--danger)';
+                el.style.textShadow = val >= 0 ? '0 0 10px rgba(16, 185, 129, 0.2)' : '0 0 10px rgba(239, 68, 68, 0.2)';
+            };
+            
+            formatSummaryPnl(buyNetPnl, 'summaryBuyPnl');
+            formatSummaryPnl(sellNetPnl, 'summarySellPnl');
+            formatSummaryPnl(totalNetPnl, 'summaryTotalPnl');
+            
+            // Filter logs based on selection
+            const filteredLogs = logs.filter(row => {
+                if (window.currentFilter === 'ALL') return true;
+                if (window.currentFilter === 'BUY') return row.opt_type !== 'STRANGLE';
+                if (window.currentFilter === 'SELL') return row.opt_type === 'STRANGLE';
+                return true;
+            });
+            
+            if (filteredLogs.length === 0) {
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align: center; color: var(--text-dark); padding: 30px;">
+                            No trade executions match selected strategy filter
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            filteredLogs.forEach(row => {
+                const dateFormatted = row.exit_time === 'ACTIVE' ? 'TODAY' : `${row.date.substring(0,4)}-${row.date.substring(4,6)}-${row.date.substring(6,8)}`;
+                const pnlVal = parseFloat(row.pnl_rs);
+                const pnlPts = parseFloat(row.pnl_pts);
+                
+                const pnlClass = pnlVal >= 0 ? 'pnl-gain' : 'pnl-loss';
+                const pnlSign = pnlVal >= 0 ? '+' : '';
+                
+                let badgeClass = 'badge-eod';
+                if (row.result === 'TARGET' || row.result === 'TGT') badgeClass = 'badge-target';
+                else if (row.result === 'SL') badgeClass = 'badge-sl';
+                else if (row.result.includes('ACTIVE')) badgeClass = 'badge-strangle';
+                
+                let optTypeBadge = '';
+                if (row.opt_type === 'CE') {
+                    optTypeBadge = `<span class="badge badge-target" style="padding: 1px 3px; font-size: 8px;">CE</span>`;
+                } else if (row.opt_type === 'PE') {
+                    optTypeBadge = `<span class="badge badge-sl" style="padding: 1px 3px; font-size: 8px;">PE</span>`;
+                } else {
+                    optTypeBadge = `<span class="badge badge-strangle" style="padding: 1px 3px; font-size: 8px;">STRANGLE</span>`;
+                }
+                
+                const pVal = row.P ? parseFloat(row.P).toFixed(1) : '-';
+                let tgtVal = '-';
+                if (row.opt_type === 'CE' && row.R1) {
+                    tgtVal = parseFloat(row.R1).toFixed(1);
+                } else if (row.opt_type === 'PE' && row.S1) {
+                    tgtVal = parseFloat(row.S1).toFixed(1);
+                } else if (row.opt_type === 'STRANGLE') {
+                    tgtVal = 'Combined SL';
+                }
+                
+                const tr = document.createElement('tr');
+                if (row.exit_time === 'ACTIVE') {
+                    tr.style.background = 'rgba(139, 92, 246, 0.05)';
+                    tr.style.borderLeft = '4px solid var(--primary)';
+                }
+                
+                const displayExitTime = row.exit_time === 'ACTIVE' ? '<span style="color:var(--primary); font-weight:700; animation:pulse-breathe 1.5s infinite; display:inline-block;">RUNNING ⏳</span>' : row.exit_time;
+                const displayExitPrice = row.exit_time === 'ACTIVE' ? `LTP: ₹${parseFloat(row.exit_price).toFixed(2)}` : `₹${parseFloat(row.exit_price).toFixed(2)}`;
+                const displayResult = row.exit_time === 'ACTIVE' ? `<span class="badge badge-strangle" style="animation: pulse-breathe 1s infinite;">ACTIVE</span>` : `<span class="badge ${badgeClass}">${row.result}</span>`;
+                
+                tr.innerHTML = `
+                    <td style="font-weight: 500; font-family: var(--font-mono);">${dateFormatted}</td>
+                    <td style="font-weight: 600; font-size: 11px;">
+                        ${row.symbol} ${optTypeBadge}
+                    </td>
+                    <td>
+                        <div style="font-size:10px; color:var(--text-muted);">Signal: ${row.signal_time}</div>
+                        <div style="font-weight:500;">Entry: ${row.entry_time}</div>
+                    </td>
+                    <td style="font-family: var(--font-mono);">₹${parseFloat(row.entry_price).toFixed(2)}</td>
+                    <td style="font-family: var(--font-mono);">${displayExitTime}</td>
+                    <td style="font-family: var(--font-mono);">${displayExitPrice}</td>
+                    <td>${displayResult}</td>
+                    <td style="color:${parseFloat(row.gap) >= 0 ? 'var(--success)' : 'var(--danger)'}; font-family: var(--font-mono);">${parseFloat(row.gap) >= 0 ? '+' : ''}${parseFloat(row.gap).toFixed(1)}</td>
+                    <td>
+                        <div style="font-size:10px; color:var(--text-muted); font-family: var(--font-mono);">P: ${pVal}</div>
+                        <div style="font-size:10px; color:var(--text-muted); font-family: var(--font-mono);">Tgt: ${tgtVal}</div>
+                    </td>
+                    <td>
+                        <span class="pnl-tag ${pnlClass}" style="${row.exit_time === 'ACTIVE' ? 'animation: pulse-breathe 2s infinite;' : ''}">
+                            ${pnlSign}₹${pnlVal.toLocaleString('en-IN', {minimumFractionDigits: 2})}
+                            <div style="font-size: 9px; font-weight: 500; text-align: right; opacity: 0.8;">
+                                ${pnlSign}${pnlPts.toFixed(2)} pts
+                            </div>
+                        </span>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
         // Fetch Historical Trade Logs CSV
         async function fetchLogs() {
             try {
@@ -1920,81 +2110,8 @@
                 if (!response.ok) throw new Error("Logs fetch failed");
                 const logs = await response.json();
                 
-                const body = document.getElementById('logsTableBody');
-                body.innerHTML = '';
-                
-                if (logs.length === 0) {
-                    body.innerHTML = `
-                        <tr>
-                            <td colspan="10" style="text-align: center; color: var(--text-dark); padding: 30px;">
-                                No trade executions recorded yet in paper_trade_log.csv
-                            </td>
-                        </tr>
-                    `;
-                    return;
-                }
-                
-                logs.forEach(row => {
-                    const dateFormatted = `${row.date.substring(0,4)}-${row.date.substring(4,6)}-${row.date.substring(6,8)}`;
-                    const pnlVal = parseFloat(row.pnl_rs);
-                    const pnlPts = parseFloat(row.pnl_pts);
-                    
-                    const pnlClass = pnlVal >= 0 ? 'pnl-gain' : 'pnl-loss';
-                    const pnlSign = pnlVal >= 0 ? '+' : '';
-                    
-                    let badgeClass = 'badge-eod';
-                    if (row.result === 'TARGET' || row.result === 'TGT') badgeClass = 'badge-target';
-                    else if (row.result === 'SL') badgeClass = 'badge-sl';
-                    
-                    let optTypeBadge = '';
-                    if (row.opt_type === 'CE') {
-                        optTypeBadge = `<span class="badge badge-target" style="padding: 1px 3px; font-size: 8px;">CE</span>`;
-                    } else if (row.opt_type === 'PE') {
-                        optTypeBadge = `<span class="badge badge-sl" style="padding: 1px 3px; font-size: 8px;">PE</span>`;
-                    } else {
-                        optTypeBadge = `<span class="badge badge-strangle" style="padding: 1px 3px; font-size: 8px;">STRANGLE</span>`;
-                    }
-                    
-                    const pVal = row.P ? parseFloat(row.P).toFixed(1) : '-';
-                    let tgtVal = '-';
-                    if (row.opt_type === 'CE' && row.R1) {
-                        tgtVal = parseFloat(row.R1).toFixed(1);
-                    } else if (row.opt_type === 'PE' && row.S1) {
-                        tgtVal = parseFloat(row.S1).toFixed(1);
-                    } else if (row.opt_type === 'STRANGLE') {
-                        tgtVal = 'Combined SL';
-                    }
-                    
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td style="font-weight: 500; font-family: var(--font-mono);">${dateFormatted}</td>
-                        <td style="font-weight: 600; font-size: 11px;">
-                            ${row.symbol} ${optTypeBadge}
-                        </td>
-                        <td>
-                            <div style="font-size:10px; color:var(--text-muted);">Signal: ${row.signal_time}</div>
-                            <div style="font-weight:500;">Entry: ${row.entry_time}</div>
-                        </td>
-                        <td style="font-family: var(--font-mono);">₹${parseFloat(row.entry_price).toFixed(2)}</td>
-                        <td>${row.exit_time}</td>
-                        <td style="font-family: var(--font-mono);">₹${parseFloat(row.exit_price).toFixed(2)}</td>
-                        <td><span class="badge ${badgeClass}">${row.result}</span></td>
-                        <td style="color:${parseFloat(row.gap) >= 0 ? 'var(--success)' : 'var(--danger)'}; font-family: var(--font-mono);">${parseFloat(row.gap) >= 0 ? '+' : ''}${parseFloat(row.gap).toFixed(1)}</td>
-                        <td>
-                            <div style="font-size:10px; color:var(--text-muted); font-family: var(--font-mono);">P: ${pVal}</div>
-                            <div style="font-size:10px; color:var(--text-muted); font-family: var(--font-mono);">Tgt: ${tgtVal}</div>
-                        </td>
-                        <td>
-                            <span class="pnl-tag ${pnlClass}">
-                                ${pnlSign}₹${pnlVal.toLocaleString('en-IN', {minimumFractionDigits: 2})}
-                                <div style="font-size: 9px; font-weight: 500; text-align: right; opacity: 0.8;">
-                                    ${pnlSign}${pnlPts.toFixed(2)} pts
-                                </div>
-                            </span>
-                        </td>
-                    `;
-                    body.appendChild(tr);
-                });
+                window.allLogs = logs;
+                renderFilteredLogs();
             } catch (error) {
                 console.error("Error fetching logs:", error);
             }

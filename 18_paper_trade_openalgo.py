@@ -366,6 +366,23 @@ def place_order(symbol, action, qty):
         log(f"ERROR placing order: {e}")
         return None
 
+def git_sync_log():
+    """Sync the trade log CSV file to GitHub in the background."""
+    def _sync():
+        try:
+            import subprocess
+            log("Syncing trade log to GitHub...")
+            subprocess.run(["git", "add", "data/paper_trade_log.csv"], check=True, capture_output=True)
+            msg = f"chore: auto update trade log at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            subprocess.run(["git", "commit", "-m", msg], check=True, capture_output=True)
+            subprocess.run(["git", "push", "origin", "main"], check=True, capture_output=True)
+            log("GitHub sync completed successfully! 🐙")
+        except Exception as e:
+            log(f"Git sync failed: {e}")
+            
+    import threading
+    threading.Thread(target=_sync, daemon=True).start()
+
 def write_log(row):
     """Append trade row to CSV log."""
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
@@ -379,6 +396,7 @@ def write_log(row):
             w.writeheader()
         w.writerow(row)
     log(f"Trade logged → {LOG_FILE}")
+    git_sync_log()
 
 
 # ── Pivot calculation from yesterday ──────────────────────────────────────

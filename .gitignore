@@ -11,6 +11,7 @@ data/terminal.log
 
 # Raw NSE tick data files (they are large and auto-downloaded/mocked)
 data/*.csv
+!data/paper_trade_log.csv
 
 # Local environment and IDEs
 venv/
