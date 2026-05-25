@@ -2,8 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NIFTY Pivot Gap Strategy - Web Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fifto NIFTY Buy-Sell Web App</title>
+    
+    <!-- PWA Metadata -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/fifto_logo.png">
+    
+    <!-- Site Icon -->
+    <link rel="icon" type="image/png" href="/fifto_logo.png">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,15 +23,15 @@
     <!-- Premium CSS Styles -->
     <style>
         :root {
-            --bg-color: #080a11;
+            --bg-color: #060814;
             --panel-bg: rgba(255, 255, 255, 0.03);
-            --panel-border: rgba(255, 255, 255, 0.06);
-            --panel-hover: rgba(255, 255, 255, 0.05);
+            --panel-border: rgba(255, 255, 255, 0.05);
+            --panel-hover: rgba(255, 255, 255, 0.06);
             
             --primary: #8b5cf6;
-            --primary-glow: rgba(139, 92, 246, 0.35);
+            --primary-glow: rgba(139, 92, 246, 0.3);
             --secondary: #06b6d4;
-            --secondary-glow: rgba(6, 182, 212, 0.35);
+            --secondary-glow: rgba(6, 182, 212, 0.3);
             
             --success: #10b981;
             --success-glow: rgba(16, 185, 129, 0.25);
@@ -31,21 +41,22 @@
             --warning-glow: rgba(245, 158, 11, 0.25);
             
             --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --text-dark: #6b7280;
+            --text-muted: #a1a1aa;
+            --text-dark: #71717a;
             
             --font-display: 'Outfit', sans-serif;
             --font-body: 'Inter', sans-serif;
             --font-mono: 'Fira Code', monospace;
             
-            --card-radius: 16px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --card-radius: 20px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -55,10 +66,26 @@
             min-height: 100vh;
             overflow-x: hidden;
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 40%);
+                radial-gradient(circle at 5% 10%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 95% 90%, rgba(6, 182, 212, 0.1) 0%, transparent 40%);
             background-attachment: fixed;
-            padding: 24px;
+            padding: 24px 24px 40px 24px;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
 
         /* Layout Grid */
@@ -73,18 +100,20 @@
         /* Glassmorphism Card Style */
         .card {
             background: var(--panel-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--panel-border);
             border-radius: var(--card-radius);
             padding: 24px;
             transition: var(--transition);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
 
         .card:hover {
-            border-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.08);
             background: var(--panel-hover);
-            box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.5);
         }
 
         /* Header Style */
@@ -94,45 +123,59 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-img {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+            object-fit: cover;
         }
 
         .logo-section h1 {
             font-family: var(--font-display);
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 800;
             letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #a78bfa 0%, #22d3ee 100%);
+            background: linear-gradient(135deg, #c084fc 0%, #22d3ee 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .logo-section p {
             color: var(--text-muted);
             font-size: 13px;
-            margin-top: 4px;
+            margin-top: 2px;
         }
 
         .header-controls {
             display: flex;
             align-items: center;
-            gap: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         /* Glowing Status Badge */
         .status-badge {
-            padding: 8px 16px;
+            padding: 8px 14px;
             border-radius: 30px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             letter-spacing: 0.5px;
             text-transform: uppercase;
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.05);
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--panel-border);
         }
 
@@ -161,14 +204,12 @@
         .status-OFFLINE { color: var(--danger); border-color: var(--danger-glow); }
         .status-OFFLINE .status-dot { background-color: var(--danger); box-shadow: 0 0 10px var(--danger); }
 
-        /* Custom OpenAlgo Connection Status Styles */
         .status-openalgo-online { color: var(--success); border-color: var(--success-glow); }
         .status-openalgo-online .status-dot { background-color: var(--success); box-shadow: 0 0 10px var(--success); }
         
         .status-openalgo-offline { color: var(--danger); border-color: var(--danger-glow); }
         .status-openalgo-offline .status-dot { background-color: var(--danger); box-shadow: 0 0 10px var(--danger); }
 
-        /* Custom Feed Connection Status Styles */
         .status-feed-active { color: var(--success); border-color: var(--success-glow); }
         .status-feed-active .status-dot { background-color: var(--success); box-shadow: 0 0 10px var(--success); animation: pulse-breathe 2s infinite; }
         
@@ -187,7 +228,7 @@
         /* Top Metrics Row */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
         }
 
@@ -198,39 +239,47 @@
             min-height: 120px;
             position: relative;
             overflow: hidden;
+            border-left: 4px solid var(--panel-border);
         }
 
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
+        .metric-card.spot { border-left-color: var(--secondary); background: linear-gradient(90deg, rgba(6, 182, 212, 0.02) 0%, transparent 100%); }
+        .metric-card.pnl-buy { border-left-color: var(--success); background: linear-gradient(90deg, rgba(16, 185, 129, 0.02) 0%, transparent 100%); }
+        .metric-card.pnl-sell { border-left-color: var(--primary); background: linear-gradient(90deg, rgba(139, 92, 246, 0.02) 0%, transparent 100%); }
+        .metric-card.gap { border-left-color: var(--warning); background: linear-gradient(90deg, rgba(245, 158, 11, 0.02) 0%, transparent 100%); }
+
+        .metric-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 600;
         }
 
-        .metric-card.spot::before { background: var(--secondary); }
-        .metric-card.pnl-buy::before { background: var(--success); }
-        .metric-card.pnl-sell::before { background: var(--primary); }
-        .metric-card.gap::before { background: var(--warning); }
+        .metric-value {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 700;
+            margin: 8px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .metric-desc {
+            font-size: 12px;
+            color: var(--text-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
         /* Dual-Strategy Telemetry Layout */
         .strategy-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
             gap: 24px;
-            margin-bottom: 24px;
-        }
-        
-        @media (max-width: 768px) {
-            .strategy-grid {
-                grid-template-columns: 1fr;
-            }
         }
         
         .strategy-card {
             border-top: 4px solid var(--panel-border);
-            position: relative;
         }
         
         .strategy-card.buying {
@@ -276,10 +325,10 @@
         }
         
         .strat-data-item {
-            background: rgba(0, 0, 0, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            padding: 10px;
+            background: rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            padding: 12px;
         }
         
         .strat-data-label {
@@ -292,7 +341,7 @@
         
         .strat-data-value {
             font-family: var(--font-mono);
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--text-main);
             word-break: break-all;
@@ -302,10 +351,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.015);
             border: 1px solid var(--panel-border);
-            border-radius: 10px;
-            padding: 12px 16px;
+            border-radius: 12px;
+            padding: 14px 18px;
             margin-top: 16px;
         }
         
@@ -317,15 +366,15 @@
         
         .strat-pnl-value {
             font-family: var(--font-display);
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 800;
         }
         
         .distance-bar-container {
             margin-top: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-            height: 24px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            height: 26px;
             position: relative;
             overflow: hidden;
             display: flex;
@@ -340,7 +389,7 @@
             top: 0;
             left: 0;
             height: 100%;
-            transition: width 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
             opacity: 0.15;
         }
         
@@ -348,52 +397,19 @@
             position: relative;
             z-index: 2;
             color: var(--text-main);
-        }
-
-        .metric-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        .metric-value {
-            font-family: var(--font-display);
-            font-size: 32px;
-            font-weight: 700;
-            margin: 8px 0;
-            letter-spacing: -0.5px;
-        }
-
-        .metric-desc {
-            font-size: 12px;
-            color: var(--text-dark);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .pulse-text {
-            animation: text-glow 2s infinite ease-in-out;
+            letter-spacing: 0.2px;
         }
 
         /* 2 Column Main Section */
         .main-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 2.1fr 1fr;
             gap: 24px;
-        }
-
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
         }
 
         /* Visual Pivots Gauge */
         .pivots-section {
-            margin-bottom: 24px;
+            margin-bottom: 8px;
         }
 
         .gauge-title {
@@ -409,13 +425,13 @@
 
         .pivots-track-container {
             position: relative;
-            padding: 32px 0 16px 0;
-            margin: 0 10px;
+            padding: 36px 0 16px 0;
+            margin: 0 12px;
         }
 
         .pivots-track {
             height: 6px;
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.06);
             border-radius: 3px;
             position: relative;
         }
@@ -477,8 +493,8 @@
         }
 
         .pointer-arrow {
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             background: #ffffff;
             border-radius: 50%;
             box-shadow: 0 0 15px #ffffff, 0 0 5px var(--primary);
@@ -500,8 +516,8 @@
 
         /* Buttons & Forms styling */
         .btn {
-            padding: 12px 24px;
-            border-radius: 10px;
+            padding: 12px 20px;
+            border-radius: 12px;
             font-family: var(--font-display);
             font-size: 14px;
             font-weight: 600;
@@ -522,7 +538,7 @@
 
         .btn-start:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
         }
 
         .btn-stop {
@@ -533,11 +549,11 @@
 
         .btn-stop:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
         }
 
         .btn:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
             transform: none !important;
             box-shadow: none !important;
@@ -545,8 +561,8 @@
 
         .form-title {
             font-family: var(--font-display);
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 17px;
+            font-weight: 700;
             margin-bottom: 20px;
             color: var(--text-main);
             border-bottom: 1px solid var(--panel-border);
@@ -565,18 +581,20 @@
 
         label {
             display: block;
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 11px;
+            font-weight: 600;
             color: var(--text-muted);
             margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         input, select {
             width: 100%;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.25);
             border: 1px solid var(--panel-border);
-            border-radius: 8px;
-            padding: 10px 14px;
+            border-radius: 10px;
+            padding: 11px 14px;
             color: var(--text-main);
             font-family: var(--font-body);
             font-size: 13px;
@@ -605,16 +623,13 @@
             margin-bottom: 12px;
         }
 
-        .terminal-actions {
-            display: flex;
-            gap: 6px;
-        }
-
         .terminal-dot {
             width: 10px;
             height: 10px;
             border-radius: 50%;
             background: var(--text-dark);
+            display: inline-block;
+            margin-right: 4px;
         }
 
         .terminal-dot.red { background-color: #ef4444; }
@@ -622,15 +637,15 @@
         .terminal-dot.green { background-color: #10b981; }
 
         .terminal-body {
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.45);
             border: 1px solid var(--panel-border);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 16px;
             flex-grow: 1;
             font-family: var(--font-mono);
-            font-size: 12px;
+            font-size: 11.5px;
             line-height: 1.5;
-            color: #38bdf8; /* light blue */
+            color: #38bdf8; 
             overflow-y: auto;
             word-break: break-all;
             white-space: pre-wrap;
@@ -638,13 +653,12 @@
 
         /* Trade logs history table */
         .history-card {
-            margin-top: 24px;
+            margin-top: 8px;
         }
 
         .table-responsive {
             width: 100%;
             overflow-x: auto;
-            margin-top: 16px;
         }
 
         table {
@@ -693,27 +707,28 @@
         }
 
         .badge {
-            padding: 2px 6px;
+            padding: 3px 6px;
             border-radius: 4px;
             font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
+            display: inline-block;
         }
         
-        .badge-target { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
-        .badge-sl { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
-        .badge-eod { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
-        .badge-strangle { background: rgba(139, 92, 246, 0.1); color: var(--primary); border: 1px solid rgba(139, 92, 246, 0.2); }
+        .badge-target { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.15); }
+        .badge-sl { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.15); }
+        .badge-eod { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.15); }
+        .badge-strangle { background: rgba(139, 92, 246, 0.1); color: var(--primary); border: 1px solid rgba(139, 92, 246, 0.15); }
 
         /* Animations */
         @keyframes pulse-breathe {
             0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.15); }
+            50% { opacity: 1; transform: scale(1.1); }
         }
 
         @keyframes text-glow {
             0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.1)); }
-            50% { filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5)); }
+            50% { filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4)); }
         }
 
         /* Toast Notifications */
@@ -728,12 +743,12 @@
         }
 
         .toast {
-            background: rgba(15, 23, 42, 0.9);
+            background: rgba(10, 15, 30, 0.95);
             border: 1px solid var(--panel-border);
             backdrop-filter: blur(10px);
             padding: 16px 20px;
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -757,7 +772,7 @@
 
         /* Documentation Panel Styling */
         .doc-card {
-            margin-top: 24px;
+            margin-top: 8px;
             border-left: 4px solid var(--secondary);
             background: linear-gradient(180deg, rgba(6, 182, 212, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
         }
@@ -802,102 +817,80 @@
         .doc-content.collapsed {
             max-height: 0;
             opacity: 0;
-            padding-bottom: 0;
             margin-bottom: 0;
-            border: none;
         }
 
         .doc-tabs {
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 20px;
             border-bottom: 1px solid var(--panel-border);
-            padding-bottom: 10px;
+            margin-bottom: 20px;
+            gap: 12px;
         }
 
         .doc-tab-btn {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--panel-border);
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
             color: var(--text-muted);
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
+            padding: 8px 12px;
             font-family: var(--font-display);
             font-size: 13px;
             font-weight: 600;
+            cursor: pointer;
             transition: var(--transition);
         }
 
         .doc-tab-btn:hover {
-            background: rgba(255, 255, 255, 0.05);
             color: var(--text-main);
         }
 
         .doc-tab-btn.active {
-            background: linear-gradient(135deg, var(--secondary) 0%, #0891b2 100%);
-            color: #ffffff;
-            border-color: transparent;
-            box-shadow: 0 4px 10px var(--secondary-glow);
+            color: var(--secondary);
+            border-bottom-color: var(--secondary);
         }
 
         .doc-tab-content {
             display: none;
-            animation: fadeIn 0.3s ease;
         }
 
         .doc-tab-content.active {
             display: block;
+            animation: fadeIn 0.3s ease;
         }
 
         .doc-rule-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
         }
 
         .doc-rule-card {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--panel-border);
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.02);
             border-radius: 12px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            transition: var(--transition);
-        }
-
-        .doc-rule-card:hover {
-            border-color: rgba(6, 182, 212, 0.2);
-            background: rgba(0, 0, 0, 0.3);
+            padding: 16px;
         }
 
         .doc-rule-card h4 {
             font-family: var(--font-display);
             font-size: 14px;
             font-weight: 700;
-            color: var(--text-main);
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            padding-bottom: 6px;
         }
 
         .doc-rule-card ul {
-            list-style-type: none;
-            padding-left: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            list-style: none;
+            font-size: 12.5px;
+            color: var(--text-muted);
         }
 
         .doc-rule-card li {
-            font-size: 12.5px;
-            line-height: 1.5;
-            color: var(--text-muted);
+            margin-bottom: 10px;
             position: relative;
-            padding-left: 16px;
+            padding-left: 12px;
+            line-height: 1.5;
         }
 
         .doc-rule-card li::before {
@@ -909,581 +902,851 @@
         }
 
         .doc-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
+            font-size: 9px;
+            padding: 1px 4px;
+            border-radius: 3px;
             font-weight: 700;
-            text-transform: uppercase;
+            vertical-align: middle;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
+            from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Fixed Navigation Styles for Mobile App Shell */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: rgba(10, 12, 22, 0.96);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-top: 1px solid var(--panel-border);
+            display: none;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 999;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 25%;
+            height: 100%;
+            transition: var(--transition);
+        }
+
+        .nav-item svg {
+            transition: var(--transition);
+            opacity: 0.65;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item.active svg {
+            transform: translateY(-2px);
+            opacity: 1;
+            stroke: var(--primary);
+            filter: drop-shadow(0 0 5px var(--primary-glow));
+        }
+
+        /* Filters and summary grid styling */
+        .filter-btn.active {
+            border-color: var(--primary) !important;
+            background: var(--primary-glow) !important;
+            color: var(--text-main) !important;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+        }
+
+        /* Mobile Layout Modifications */
+        @media (max-width: 768px) {
+            body {
+                padding: 16px 16px 88px 16px;
+            }
+
+            .container {
+                gap: 16px;
+            }
+
+            header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 4px;
+            }
+
+            .logo-section h1 {
+                font-size: 20px;
+            }
+
+            .logo-img {
+                width: 36px;
+                height: 36px;
+            }
+
+            .logo-section p, .status-badge span {
+                display: none; /* Hide subtitles to keep header clean */
+            }
+
+            .status-badge {
+                padding: 8px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .metric-card {
+                min-height: 100px;
+                padding: 12px;
+            }
+
+            .metric-value {
+                font-size: 22px;
+                margin: 4px 0;
+            }
+
+            .metric-desc {
+                font-size: 10px;
+            }
+
+            .strategy-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .strategy-card {
+                padding: 16px;
+            }
+
+            .strat-data-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .strat-pnl-value {
+                font-size: 20px;
+            }
+
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            /* Bottom navigation bar visible on mobile */
+            .bottom-nav {
+                display: flex;
+            }
+
+            /* Show active screen, hide others in App mode */
+            .app-screen {
+                display: none;
+                opacity: 0;
+                animation: fadeIn 0.25s ease-in-out forwards;
+            }
+
+            .app-screen.active {
+                display: block;
+                opacity: 1;
+            }
+
+            /* Table Responsive styling to Cards */
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+            
+            thead {
+                display: none;
+            }
+            
+            tr {
+                background: rgba(255, 255, 255, 0.015) !important;
+                border: 1px solid var(--panel-border) !important;
+                border-radius: 14px;
+                margin-bottom: 12px;
+                padding: 14px;
+                border-left: 4px solid var(--panel-border) !important;
+            }
+
+            tr[style*="border-left"] {
+                border-left: 4px solid var(--primary) !important; /* Retain active row indicator */
+            }
+            
+            td {
+                border: none;
+                padding: 6px 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 12px;
+                text-align: right;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.01);
+            }
+
+            td:last-child {
+                border-bottom: none;
+                padding-top: 10px;
+                margin-top: 4px;
+            }
+            
+            td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                color: var(--text-dark);
+                text-transform: uppercase;
+                font-size: 9.5px;
+                letter-spacing: 0.5px;
+                float: left;
+                text-align: left;
+            }
+
+            .pnl-tag {
+                width: auto;
+                text-align: right;
+            }
+
+            .toast-container {
+                left: 16px;
+                right: 16px;
+                bottom: 80px;
+            }
+
+            .toast {
+                min-width: 0;
+            }
+        }
+
+        /* Desktop specific styling overrides */
+        @media (min-width: 769px) {
+            .app-screen {
+                display: block !important;
+                opacity: 1 !important;
+                margin-bottom: 0px;
+            }
+            .bottom-nav {
+                display: none !important;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="toast-container" id="toastContainer"></div>
-
     <div class="container">
         
-        <!-- Header Section -->
-        <header class="card">
+        <!-- Header -->
+        <header>
             <div class="logo-section">
-                <h1>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
-                        <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="url(#boltGrad)" stroke="#8b5cf6" stroke-width="2" stroke-linejoin="round"/>
-                        <defs>
-                            <linearGradient id="boltGrad" x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#8b5cf6"/>
-                                <stop offset="1" stop-color="#06b6d4"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                    NIFTY PIVOT GAP STRATEGY
-                </h1>
-                <p>Premium Real-time Intraday Options Scanner & Paper Trading Dashboard</p>
+                <img src="/fifto_logo.png" alt="Fifto Logo" class="logo-img">
+                <div>
+                    <h1>FIFTO APP</h1>
+                    <p>Dynamic Dual Strategy Auto Execution Shell</p>
+                </div>
             </div>
-            
             <div class="header-controls">
-                <div id="liveClock" style="font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); margin-right: 12px;">00:00:00</div>
-                
-                <!-- OpenAlgo Server Connection Badge -->
-                <div class="status-badge status-openalgo-offline" id="openalgoStatus" title="OpenAlgo API Server Status">
-                    <span class="status-dot"></span>
-                    <span id="openalgoStatusText">OpenAlgo: Offline</span>
+                <div class="status-badge" id="liveClockBadge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span id="liveClock" style="font-family: var(--font-mono); font-weight:600;">--:--:--</span>
                 </div>
-
-                <!-- Live Market Data Feed Badge -->
-                <div class="status-badge status-feed-inactive" id="feedStatus" title="Broker Market Data Feed Status">
+                <div class="status-badge status-OFFLINE" id="scannerStatus">
                     <span class="status-dot"></span>
-                    <span id="feedStatusText">Feed: Inactive</span>
+                    <span id="scannerStatusText">Offline</span>
                 </div>
-
-                <!-- Main Strategy Scanner Badge -->
-                <div class="status-badge status-OFFLINE" id="scannerStatus" title="Scanner Engine Status">
+                <div class="status-badge status-openalgo-offline" id="openalgoStatus">
                     <span class="status-dot"></span>
-                    <span id="scannerStatusText">OFFLINE</span>
+                    <span id="openalgoStatusText">OpenAlgo</span>
+                </div>
+                <div class="status-badge status-feed-inactive" id="feedStatus">
+                    <span class="status-dot"></span>
+                    <span id="feedStatusText">Feed</span>
                 </div>
             </div>
         </header>
 
-        <!-- Top Metrics Row -->
-        <div class="metrics-grid">
+        <!-- SCREEN 1: DASHBOARD AND STATS (Visible by default) -->
+        <div id="screen-dashboard" class="app-screen active">
             
-            <div class="card metric-card spot">
-                <div>
-                    <div class="metric-label">NIFTY Live Spot</div>
-                    <div class="metric-value" id="spotLtp">-</div>
+            <!-- Top Metrics Row -->
+            <div class="metrics-grid" style="margin-bottom: 24px;">
+                <!-- Spot Card -->
+                <div class="card metric-card spot">
+                    <div class="metric-label">NIFTY 50 Spot</div>
+                    <div class="metric-value pulse-text" id="spotLtp" style="color: var(--secondary); text-shadow: 0 0 10px var(--secondary-glow);">--</div>
+                    <div class="metric-desc">
+                        <span id="spotChange" style="font-weight:600;">0.00 (0.00%)</span>
+                        <span id="spotTime" style="font-family: var(--font-mono);">Last update: --</span>
+                    </div>
                 </div>
-                <div class="metric-desc">
-                    <span id="spotChange">-%</span>
-                    <span style="font-size: 10px; color: var(--text-dark);" id="spotTime">Last update: --:--:--</span>
+                
+                <!-- BASE Buy P&L Card -->
+                <div class="card metric-card pnl-buy">
+                    <div class="metric-label">Strategy 1: BASE Buy</div>
+                    <div class="metric-value" id="buyPnl" style="color: var(--text-muted);">₹0.00</div>
+                    <div class="metric-desc">
+                        <span id="buySymbol" style="font-weight:500;">No active trade</span>
+                        <span id="buyPnlPts" style="font-family: var(--font-mono);">0.00 pts</span>
+                    </div>
                 </div>
-            </div>
-
-            <div class="card metric-card pnl-buy">
-                <div>
-                    <div class="metric-label">BASE Option Buying P&L</div>
-                    <div class="metric-value pulse-text" id="buyPnl" style="color: var(--text-muted);">₹0.00</div>
+                
+                <!-- Strangle Sell P&L Card -->
+                <div class="card metric-card pnl-sell">
+                    <div class="metric-label">Strategy 2: Strangle Sell</div>
+                    <div class="metric-value" id="sellPnl" style="color: var(--text-muted);">₹0.00</div>
+                    <div class="metric-desc">
+                        <span id="sellSymbol" style="font-weight:500;">No active trade</span>
+                        <span id="sellPnlPts" style="font-family: var(--font-mono);">0.00 pts</span>
+                    </div>
                 </div>
-                <div class="metric-desc">
-                    <span id="buySymbol">No active trade</span>
-                    <span id="buyPnlPts" style="font-weight: 600;">0.00 pts</span>
-                </div>
-            </div>
-
-            <div class="card metric-card pnl-sell">
-                <div>
-                    <div class="metric-label">Strangle Short Selling P&L</div>
-                    <div class="metric-value pulse-text" id="sellPnl" style="color: var(--text-muted);">₹0.00</div>
-                </div>
-                <div class="metric-desc">
-                    <span id="sellSymbol">No active trade</span>
-                    <span id="sellPnlPts" style="font-weight: 600;">0.00 pts</span>
-                </div>
-            </div>
-
-            <div class="card metric-card gap">
-                <div>
+                
+                <!-- Opening Gap Card -->
+                <div class="card metric-card gap">
                     <div class="metric-label">Opening Gap</div>
-                    <div class="metric-value" id="gapValue" style="color: var(--text-main);">-</div>
-                </div>
-                <div class="metric-desc">
-                    <span id="gapOpen">Open: -</span>
-                    <span id="gapPrevClose">Prev Close: -</span>
+                    <div class="metric-value" id="gapValue" style="color: var(--text-muted);">--</div>
+                    <div class="metric-desc">
+                        <span id="gapOpen" style="font-weight:500;">Open: --</span>
+                        <span id="gapPrevClose" style="font-weight:500;">Prev Close: --</span>
+                    </div>
                 </div>
             </div>
 
-        </div>
-
-        <!-- Horizontal Pivots Gauge (Relative Slider) -->
-        <div class="card">
-            <div class="gauge-title">
-                <span>Spot Position Relative to Pivots</span>
-                <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);" id="pivotsDate">Trading Date: ----</span>
+            <!-- Visual Pivots Gauge Section -->
+            <div class="card pivots-section" style="margin-bottom: 24px;">
+                <div class="gauge-title">
+                    <span style="display:flex; align-items:center; gap:6px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>
+                        NIFTY 50 Spot Pivot Gauge
+                    </span>
+                    <span id="pivotsDate" style="font-size:12px; color: var(--text-muted); font-family: var(--font-mono);">Trading Date: --</span>
+                </div>
+                <div class="pivots-track-container">
+                    <div class="pivots-track">
+                        <!-- Markers -->
+                        <div class="pivot-marker s-node" style="left: 0%;">
+                            <span class="pivot-label">S2</span>
+                            <span class="pivot-node"></span>
+                            <span class="pivot-value" id="valS2">--</span>
+                        </div>
+                        <div class="pivot-marker s-node" style="left: 25%;">
+                            <span class="pivot-label">S1 (PE Target)</span>
+                            <span class="pivot-node"></span>
+                            <span class="pivot-value" id="valS1">--</span>
+                        </div>
+                        <div class="pivot-marker p-node" style="left: 50%;">
+                            <span class="pivot-label">P (Pivot)</span>
+                            <span class="pivot-node"></span>
+                            <span class="pivot-value" id="valP">--</span>
+                        </div>
+                        <div class="pivot-marker r-node" style="left: 75%;">
+                            <span class="pivot-label">R1 (CE Target)</span>
+                            <span class="pivot-node"></span>
+                            <span class="pivot-value" id="valR1">--</span>
+                        </div>
+                        <div class="pivot-marker r-node" style="left: 100%;">
+                            <span class="pivot-label">R2</span>
+                            <span class="pivot-node"></span>
+                            <span class="pivot-value" id="valR2">--</span>
+                        </div>
+                        
+                        <!-- Live Price Pointer -->
+                        <div class="live-price-pointer" id="livePointer" style="left: 50%; display: none;">
+                            <span class="pointer-label" id="pointerVal">--</span>
+                            <span class="pointer-arrow"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
-            <div class="pivots-track-container">
-                <div class="pivots-track" id="pivotsTrack">
-                    <!-- Pivot Markers -->
-                    <div class="pivot-marker s-node" style="left: 0%;" id="markerS2">
-                        <span class="pivot-label">S2</span>
-                        <div class="pivot-node"></div>
-                        <span class="pivot-value" id="valS2">-</span>
+
+            <!-- Dual-Strategy Active Telemetry -->
+            <div class="strategy-grid">
+                
+                <!-- Strategy 1: Option Buying (BASE) -->
+                <div class="card strategy-card buying">
+                    <div class="strat-header">
+                        <span class="strat-title" style="color: var(--success);">
+                            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color: var(--success); box-shadow: 0 0 8px var(--success);"></span>
+                            Strategy 1: Option Buying (BASE)
+                        </span>
+                        <div class="status-badge status-OFFLINE" id="buyStatusBadge" style="padding:4px 8px; font-size:9px;">
+                            <span class="status-dot"></span>
+                            <span id="buyStatusText">Offline</span>
+                        </div>
                     </div>
-                    <div class="pivot-marker s-node" style="left: 25%;" id="markerS1">
-                        <span class="pivot-label">S1 (PE Target)</span>
-                        <div class="pivot-node"></div>
-                        <span class="pivot-value" id="valS1">-</span>
-                    </div>
-                    <div class="pivot-marker p-node" style="left: 50%;" id="markerP">
-                        <span class="pivot-label">P (Pivot Signal)</span>
-                        <div class="pivot-node"></div>
-                        <span class="pivot-value" id="valP">-</span>
-                    </div>
-                    <div class="pivot-marker r-node" style="left: 75%;" id="markerR1">
-                        <span class="pivot-label">R1 (CE Target)</span>
-                        <div class="pivot-node"></div>
-                        <span class="pivot-value" id="valR1">-</span>
-                    </div>
-                    <div class="pivot-marker r-node" style="left: 100%;" id="markerR2">
-                        <span class="pivot-label">R2</span>
-                        <div class="pivot-node"></div>
-                        <span class="pivot-value" id="valR2">-</span>
+                    <div class="strat-desc" id="buyStatusDesc">Scanning status inactive.</div>
+                    
+                    <div class="strat-data-grid">
+                        <div class="strat-data-item">
+                            <div class="strat-data-label">Active Symbol</div>
+                            <div class="strat-data-value" id="buyActiveSymbol">-</div>
+                        </div>
+                        <div class="strat-data-item">
+                            <div class="strat-data-label">Entry Details</div>
+                            <div class="strat-data-value" id="buyEntryDetails">-</div>
+                        </div>
+                        <div class="strat-data-item">
+                            <div class="strat-data-label">Target Spot (R1/S1)</div>
+                            <div class="strat-data-value" id="buyTargetDetails">-</div>
+                        </div>
+                        <div class="strat-data-item">
+                            <div class="strat-data-label">Stop Loss Spot (P ± 20)</div>
+                            <div class="strat-data-value" id="buySLDetails">-</div>
+                        </div>
                     </div>
                     
-                    <!-- Live spot pointer dot -->
-                    <div class="live-price-pointer" style="left: 50%; display: none;" id="livePointer">
-                        <div class="pointer-label" id="pointerVal">-</div>
-                        <div class="pointer-arrow"></div>
+                    <!-- Dynamic Spot Distance Bars -->
+                    <div id="buyDistanceIndicators" style="display: none;">
+                        <div class="distance-bar-container">
+                            <div class="distance-bar-fill" id="buyTargetFill" style="background-color: var(--success); width: 0%;"></div>
+                            <span class="distance-bar-text" id="buyTargetDistText">To Target: --</span>
+                        </div>
+                        <div class="distance-bar-container">
+                            <div class="distance-bar-fill" id="buySLFill" style="background-color: var(--danger); width: 0%;"></div>
+                            <span class="distance-bar-text" id="buySLDistText">To SL: --</span>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Live Strategy Telemetry (Dual-Card View) -->
-        <div class="strategy-grid">
-            
-            <!-- Strategy 1: Option Buying (BASE) Card -->
-            <div class="card strategy-card buying">
-                <div class="strat-header">
-                    <div class="strat-title">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Strategy 1: Option Buying (BASE)
-                    </div>
-                    <div class="status-badge status-OFFLINE" id="buyStatusBadge">
-                        <span class="status-dot"></span>
-                        <span id="buyStatusText">OFFLINE</span>
-                    </div>
-                </div>
-                <div class="strat-desc" id="buyStatusDesc">Scanning for P-touch...</div>
-                
-                <div class="strat-data-grid">
-                    <div class="strat-data-item">
-                        <div class="strat-data-label">Instrument / Strike</div>
-                        <div class="strat-data-value" id="buyActiveSymbol">-</div>
-                    </div>
-                    <div class="strat-data-item">
-                        <div class="strat-data-label">Entry Details</div>
-                        <div class="strat-data-value" id="buyEntryDetails">-</div>
-                    </div>
-                    <div class="strat-data-item">
-                        <div class="strat-data-label">Target Spot</div>
-                        <div class="strat-data-value" id="buyTargetDetails" style="color: var(--success);">-</div>
-                    </div>
-                    <div class="strat-data-item">
-                        <div class="strat-data-label">Stop Loss Spot</div>
-                        <div class="strat-data-value" id="buySLDetails" style="color: var(--danger);">-</div>
-                    </div>
-                </div>
-
-                <!-- Distance indicators -->
-                <div id="buyDistanceIndicators" style="display: none;">
-                    <div class="distance-bar-container" style="margin-bottom: 8px;">
-                        <div class="distance-bar-fill" id="buyTargetFill" style="background: var(--success);"></div>
-                        <span class="distance-bar-text" id="buyTargetDistText">To Target: -</span>
-                    </div>
-                    <div class="distance-bar-container">
-                        <div class="distance-bar-fill" id="buySLFill" style="background: var(--danger);"></div>
-                        <span class="distance-bar-text" id="buySLDistText">To Stop Loss: -</span>
-                    </div>
-                </div>
-                
-                <div class="strat-pnl-section">
-                    <span class="strat-pnl-label">Live Buying P&L</span>
-                    <span class="strat-pnl-value" id="buyPnlText" style="color: var(--text-dark);">₹0.00</span>
-                </div>
-            </div>
-
-            <!-- Strategy 2: Option Selling (Strangle) Card -->
-            <div class="card strategy-card selling">
-                <div class="strat-header">
-                    <div class="strat-title">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="9" y1="3" x2="9" y2="21"></line>
-                        </svg>
-                        Strategy 2: Option Selling (Strangle)
-                    </div>
-                    <div class="status-badge status-OFFLINE" id="sellStatusBadge">
-                        <span class="status-dot"></span>
-                        <span id="sellStatusText">OFFLINE</span>
-                    </div>
-                </div>
-                <div class="strat-desc" id="sellStatusDesc">Waiting for 09:16 strangle entry...</div>
-                
-                <div class="strat-data-grid">
-                    <div class="strat-data-item">
-                        <div class="strat-data-label">CE Leg (Strike/LTP)</div>
-                        <div class="strat-data-value" id="sellCeDetails">-</div>
-                    </div>
-                    <div class="strat-data-item">
-                        <div class="strat-data-label">PE Leg (Strike/LTP)</div>
-                        <div class="strat-data-value" id="sellPeDetails">-</div>
-                    </div>
-                    <div class="strat-data-item">
-                        <div class="strat-data-label">Entry Time</div>
-                        <div class="strat-data-value" id="sellEntryTime">-</div>
-                    </div>
-                    <div class="strat-data-item">
-                        <div class="strat-data-label">Combined SL Trigger</div>
-                        <div class="strat-data-value" id="sellSlTrigger" style="color: var(--danger);">-₹7,000.00</div>
-                    </div>
-                </div>
-
-                <!-- Combined SL progress indicator -->
-                <div id="sellSLProgressContainer" style="display: none; margin-top: 12px;">
-                    <div class="distance-bar-container">
-                        <div class="distance-bar-fill" id="sellSLProgressFill" style="background: var(--danger);"></div>
-                        <span class="distance-bar-text" id="sellSLProgressText">Combined SL Margin: -</span>
-                    </div>
-                </div>
-                
-                <div class="strat-pnl-section">
-                    <span class="strat-pnl-label">Live Strangle P&L</span>
-                    <span class="strat-pnl-value" id="sellPnlText" style="color: var(--text-dark);">₹0.00</span>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- 2 Column Main Section -->
-        <div class="main-grid">
-            
-            <!-- Left Side: Terminal Log widget -->
-            <div class="card terminal-card">
-                <div class="terminal-header">
-                    <div class="logo-section">
-                        <span style="font-family: var(--font-display); font-weight: 600; font-size: 15px;">Live Execution Terminal</span>
-                    </div>
-                    <div class="terminal-actions">
-                        <div class="terminal-dot red"></div>
-                        <div class="terminal-dot yellow"></div>
-                        <div class="terminal-dot green"></div>
-                    </div>
-                </div>
-                <div class="terminal-body" id="terminalLog">Loading logs...</div>
-            </div>
-
-            <!-- Right Side: Configuration & Controls -->
-            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                    <h3 class="form-title">Strategy Controls</h3>
                     
-                    <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
-                        <button class="btn btn-start" id="btnStart" onclick="controlScanner('start')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <div class="strat-pnl-section">
+                        <span class="strat-pnl-label">Active Floating P&L (2-Lots)</span>
+                        <span class="strat-pnl-value" id="buyPnlText" style="color: var(--text-dark);">₹0.00</span>
+                    </div>
+                </div>
+                
+                <!-- Strategy 2: Option Selling (Strangle) -->
+                <div class="card strategy-card selling">
+                    <div class="strat-header">
+                        <span class="strat-title" style="color: var(--primary);">
+                            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color: var(--primary); box-shadow: 0 0 8px var(--primary);"></span>
+                            Strategy 2: Short Strangle (ATM±100)
+                        </span>
+                        <div class="status-badge status-OFFLINE" id="sellStatusBadge" style="padding:4px 8px; font-size:9px;">
+                            <span class="status-dot"></span>
+                            <span id="sellStatusText">Offline</span>
+                        </div>
+                    </div>
+                    <div class="strat-desc" id="sellStatusDesc">Scanning status inactive.</div>
+                    
+                    <div class="strat-data-grid">
+                        <div class="strat-data-item" style="grid-column: span 2;">
+                            <div class="strat-data-label">Short CE Option Leg</div>
+                            <div class="strat-data-value" id="sellCeDetails">-</div>
+                        </div>
+                        <div class="strat-data-item" style="grid-column: span 2;">
+                            <div class="strat-data-label">Short PE Option Leg</div>
+                            <div class="strat-data-value" id="sellPeDetails">-</div>
+                        </div>
+                        <div class="strat-data-item">
+                            <div class="strat-data-label">Entry Time</div>
+                            <div class="strat-data-value" id="sellEntryTime">-</div>
+                        </div>
+                        <div class="strat-data-item">
+                            <div class="strat-data-label">Combined SL Target</div>
+                            <div class="strat-data-value" id="sellSlTrigger" style="color: var(--danger);">-</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dynamic Strangle SL Progress Bar -->
+                    <div id="sellSLProgressContainer" style="display: none; margin-top: 12px;">
+                        <div class="distance-bar-container" style="height:26px;">
+                            <div class="distance-bar-fill" id="sellSLProgressFill" style="background-color: var(--primary); width: 0%;"></div>
+                            <span class="distance-bar-text" id="sellSLProgressText" style="font-size:9.5px;">Combined Loss: --</span>
+                        </div>
+                    </div>
+                    
+                    <div class="strat-pnl-section">
+                        <span class="strat-pnl-label">Active Floating P&L (1-Lot)</span>
+                        <span class="strat-pnl-value" id="sellPnlText" style="color: var(--text-dark);">₹0.00</span>
+                    </div>
+                </div>
+                
+            </div>
+
+        </div>
+
+        <!-- SCREEN 2: HISTORY LOGS AND SUMMARIES -->
+        <div id="screen-logs" class="app-screen">
+            
+            <!-- Historical Logs Table Card -->
+            <div class="card history-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--panel-border); padding-bottom: 16px;">
+                    <h3 class="form-title" style="margin: 0; border: none; padding: 0;">Trade Execution Log History</h3>
+                    
+                    <!-- Strategy Filter Controls -->
+                    <div class="filter-controls" style="display: flex; gap: 8px;">
+                        <button class="filter-btn active" onclick="filterLogs('ALL')" id="filterBtnALL" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-main); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">ALL</button>
+                        <button class="filter-btn" onclick="filterLogs('BUY')" id="filterBtnBUY" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">OPTION BUYING (BASE)</button>
+                        <button class="filter-btn" onclick="filterLogs('SELL')" id="filterBtnSELL" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">OPTION SELLING (STRANGLE)</button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Strategy Performance Summary -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;" id="performanceSummaryContainer">
+                    <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
+                        <div>
+                            <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Buying (BASE) Net P&L</div>
+                            <div id="summaryBuyPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
+                        </div>
+                        <span class="badge badge-target" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">BUY</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
+                        <div>
+                            <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Selling (Strangle) Net P&L</div>
+                            <div id="summarySellPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
+                        </div>
+                        <span class="badge badge-strangle" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">STRANGLE</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
+                        <div>
+                            <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Combined Total Net P&L</div>
+                            <div id="summaryTotalPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
+                        </div>
+                        <span class="badge badge-eod" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">COMBINED</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Symbol</th>
+                                <th>Signal / Entry Time</th>
+                                <th>Entry Price</th>
+                                <th>Exit Time</th>
+                                <th>Exit Price</th>
+                                <th>Result</th>
+                                <th>Remark</th>
+                                <th>Gap</th>
+                                <th>P / Target</th>
+                                <th>Net P&L</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <tr>
+                                <td colspan="11" style="text-align: center; color: var(--text-dark); padding: 30px;">Loading historical logs...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SCREEN 3: CONFIGURATION AND ENGINE PROCESS CONTROLS -->
+        <div id="screen-controls" class="app-screen">
+            
+            <div class="main-grid">
+                <!-- Left: Controls Form -->
+                <div class="card">
+                    <h3 class="form-title">Strategy Engine Configuration</h3>
+                    
+                    <div class="form-group">
+                        <label>OpenAlgo API Key</label>
+                        <input type="password" id="OPENALGO_API_KEY" placeholder="Paste your API key here">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Lot Size (NIFTY)</label>
+                            <input type="number" id="LOT_SIZE" value="65">
+                        </div>
+                        <div class="form-group">
+                            <label>Min Gap Threshold (pts)</label>
+                            <input type="number" id="GAP_THRESH" value="30" step="any">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>P Touch Tolerance (pts)</label>
+                            <input type="number" id="P_TOL" value="10" step="any">
+                        </div>
+                        <div class="form-group">
+                            <label>Stop Loss Spot (pts)</label>
+                            <input type="number" id="SL_PTS" value="20" step="any">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Entry Cutoff Time</label>
+                            <input type="text" id="ENTRY_CUTOFF" value="13:00">
+                        </div>
+                        <div class="form-group">
+                            <label>EOD Exit Time</label>
+                            <input type="text" id="EOD_EXIT" value="15:20">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>OpenAlgo Server URL</label>
+                        <input type="text" id="OPENALGO_HOST" value="http://127.0.0.1:5000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Execution Mode</label>
+                        <select id="PAPER_TRADE">
+                            <option value="true">Paper Trade (Simulated Orders)</option>
+                            <option value="false">Live Execution (⚠️ Real Orders)</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                        <button class="btn btn-start" id="btnStart" onclick="controlScanner('start')" style="flex-grow: 1;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                             Start Scanner
                         </button>
-                        <button class="btn btn-stop" id="btnStop" onclick="controlScanner('stop')" disabled>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+                        <button class="btn btn-stop" id="btnStop" onclick="controlScanner('stop')" style="flex-grow: 1;" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
                             Stop Scanner
                         </button>
                     </div>
-
-                    <h3 class="form-title">Parameters Configuration</h3>
                     
-                    <form id="configForm" onsubmit="event.preventDefault(); saveConfig();">
-                        <div class="form-group">
-                            <label for="OPENALGO_API_KEY">OpenAlgo API Key</label>
-                            <input type="password" id="OPENALGO_API_KEY" placeholder="API Key from Dashboard" required>
+                    <button class="btn" onclick="saveConfig()" style="width: 100%; margin-top: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border); color: var(--text-main);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        Save Configuration
+                    </button>
+                </div>
+                
+                <!-- Right: Live Terminal card -->
+                <div class="card terminal-card">
+                    <div class="terminal-header">
+                        <span style="font-family: var(--font-display); font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                            Live System Output Logs
+                        </span>
+                        <div>
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
                         </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="LOT_SIZE">NIFTY Lot Size</label>
-                                <input type="number" id="LOT_SIZE" required min="1">
-                            </div>
-                            <div class="form-group">
-                                <label for="GAP_THRESH">Min Gap Thresh (Pts)</label>
-                                <input type="number" id="GAP_THRESH" step="0.1" required>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="P_TOL">P Tolerance (Pts)</label>
-                                <input type="number" id="P_TOL" step="0.1" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="SL_PTS">SL from P (Pts)</label>
-                                <input type="number" id="SL_PTS" step="0.1" required>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ENTRY_CUTOFF">Entry Cutoff</label>
-                                <input type="text" id="ENTRY_CUTOFF" placeholder="HH:MM" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="EOD_EXIT">EOD Force Exit</label>
-                                <input type="text" id="EOD_EXIT" placeholder="HH:MM" required>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="OPENALGO_HOST">OpenAlgo Server Host</label>
-                                <input type="text" id="OPENALGO_HOST" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="PAPER_TRADE">Trade Mode</label>
-                                <select id="PAPER_TRADE">
-                                    <option value="true">Paper Trade Only</option>
-                                    <option value="false">Live Execution</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <button class="btn btn-start" type="submit" style="width: 100%; margin-top: 12px; background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%); box-shadow: 0 4px 15px var(--primary-glow);">
-                            Save Configuration
-                        </button>
-                    </form>
+                    </div>
+                    <div class="terminal-body" id="terminalLog">Starting terminal logs fetcher...</div>
                 </div>
             </div>
 
         </div>
 
-        <!-- Collapsible Documentation Panel -->
-        <div class="card doc-card">
-            <div class="doc-header" onclick="toggleDocPanel()">
-                <h3 style="margin-bottom: 0;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                    </svg>
-                    Strategy Rules & Execution Documentation (V3.0)
-                </h3>
-                <svg id="docToggleArrow" class="doc-toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </div>
+        <!-- SCREEN 4: SPECIFICATION AND GENERAL DOCUMENTATION -->
+        <div id="screen-docs" class="app-screen">
             
-            <div class="doc-content" id="docPanelContent">
-                <div class="doc-tabs">
-                    <button class="doc-tab-btn active" onclick="switchDocTab(this, 'buyDoc')">Strategy 1: Option Buying (BASE)</button>
-                    <button class="doc-tab-btn" onclick="switchDocTab(this, 'sellDoc')">Strategy 2: Option Selling (Strangle)</button>
-                    <button class="doc-tab-btn" onclick="switchDocTab(this, 'generalDoc')">General Rules & Skipping</button>
+            <!-- Collapsible Documentation Panel -->
+            <div class="card doc-card">
+                <div class="doc-header" onclick="toggleDocPanel()">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary);"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        NIFTY Pivot Gap 3.0 Specs & Logic Rules
+                    </h3>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="doc-toggle-icon" id="docToggleArrow"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
                 
-                <!-- Tab 1: Option Buying (BASE) -->
-                <div class="doc-tab-content active" id="buyDoc">
-                    <div class="doc-rule-grid">
-                        <div class="doc-rule-card">
-                            <h4 style="color: var(--success);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                Setup & Gap Conditions
-                            </h4>
-                            <ul>
-                                <li><strong>Gap Requirement:</strong> Opening gap must be greater than <span class="doc-badge badge-target">> 30 pts</span> (Gap Up) or less than <span class="doc-badge badge-sl">< -30 pts</span> (Gap Down).</li>
-                                <li><strong>Directional Rule:</strong>
-                                    <br>• If Gap Up: Market open price must be <strong>above</strong> Pivot level (P).
-                                    <br>• If Gap Down: Market open price must be <strong>below</strong> Pivot level (P).
-                                </li>
-                                <li><strong>No Trade on Flat Opens:</strong> If opening gap is within ±30 points, Strategy 1 is completely skipped.</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="doc-rule-card">
-                            <h4 style="color: var(--warning);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                                Entry Trigger & Logic
-                            </h4>
-                            <ul>
-                                <li><strong>Pivot Touch:</strong> Spot price must touch or cross the Pivot level (P) before <span class="doc-badge badge-eod">13:00</span> cutoff.</li>
-                                <li><strong>P Tolerance:</strong> A margin of <span class="doc-badge badge-target">±10 points</span> around P counts as a valid touch.</li>
-                                <li><strong>Delayed Entry:</strong> When touch is detected, it waits for the current 1-minute candle to close + 2 seconds buffer (e.g. entry at <code>candle_end + 2s</code>) to filter out fake breaks.</li>
-                                <li><strong>Lots & Expiry:</strong> Buys <span class="doc-badge badge-strangle">2 Lots (130 shares)</span> of ATM Call (CE) for Gap Up or ATM Put (PE) for Gap Down.</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="doc-rule-card">
-                            <h4 style="color: var(--danger);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
-                                Target, SL & Exit
-                            </h4>
-                            <ul>
-                                <li><strong>CE Target:</strong> R1 Pivot level (Spot).</li>
-                                <li><strong>CE Stop Loss:</strong> Pivot level (P) minus 20 points (<span class="doc-badge badge-sl">P - 20</span>).</li>
-                                <li><strong>PE Target:</strong> S1 Pivot level (Spot).</li>
-                                <li><strong>PE Stop Loss:</strong> Pivot level (P) plus 20 points (<span class="doc-badge badge-sl">P + 20</span>).</li>
-                                <li><strong>EOD Force Exit:</strong> If target or SL is not hit by <span class="doc-badge badge-eod">15:20</span>, the strategy auto-exits at market premium.</li>
-                            </ul>
+                <div class="doc-content" id="docPanelContent">
+                    <div class="doc-tabs">
+                        <button class="doc-tab-btn active" onclick="switchDocTab(this, 'buyDoc')">Strategy 1: BASE Buy</button>
+                        <button class="doc-tab-btn" onclick="switchDocTab(this, 'sellDoc')">Strategy 2: Strangle Sell</button>
+                        <button class="doc-tab-btn" onclick="switchDocTab(this, 'generalDoc')">Safety & Risk Limits</button>
+                    </div>
+                    
+                    <!-- Tab 1: Option Buying (BASE) -->
+                    <div class="doc-tab-content active" id="buyDoc">
+                        <div class="doc-rule-grid">
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--success);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    Setup & Gap Conditions
+                                </h4>
+                                <ul>
+                                    <li><strong>Gap Requirement:</strong> Opening gap must be greater than <span class="doc-badge badge-target">> 30 pts</span> (Gap Up) or less than <span class="doc-badge badge-sl">< -30 pts</span> (Gap Down).</li>
+                                    <li><strong>Directional Rule:</strong>
+                                        <br>• If Gap Up: Market open price must be <strong>above</strong> Pivot level (P).
+                                        <br>• If Gap Down: Market open price must be <strong>below</strong> Pivot level (P).
+                                    </li>
+                                    <li><strong>No Trade on Flat Opens:</strong> If opening gap is within ±30 points, Strategy 1 is completely skipped.</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--warning);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    Entry Trigger & Logic
+                                </h4>
+                                <ul>
+                                    <li><strong>Pivot Touch:</strong> Spot price must touch or cross the Pivot level (P) before <span class="doc-badge badge-eod">13:00</span> cutoff.</li>
+                                    <li><strong>P Tolerance:</strong> A margin of <span class="doc-badge badge-target">±10 points</span> around P counts as a valid touch.</li>
+                                    <li><strong>Delayed Entry:</strong> When touch is detected, it waits for the current 1-minute candle to close + 2 seconds buffer (e.g. entry at <code>candle_end + 2s</code>) to filter out fake breaks.</li>
+                                    <li><strong>Lots & Expiry:</strong> Buys <span class="doc-badge badge-strangle">2 Lots (130 shares)</span> of ATM Call (CE) for Gap Up or ATM Put (PE) for Gap Down.</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--danger);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+                                    Target, SL & Exit
+                                </h4>
+                                <ul>
+                                    <li><strong>CE Target:</strong> R1 Pivot level (Spot).</li>
+                                    <li><strong>CE Stop Loss:</strong> Pivot level (P) minus 20 points (<span class="doc-badge badge-sl">P - 20</span>).</li>
+                                    <li><strong>PE Target:</strong> S1 Pivot level (Spot).</li>
+                                    <li><strong>PE Stop Loss:</strong> Pivot level (P) plus 20 points (<span class="doc-badge badge-sl">P + 20</span>).</li>
+                                    <li><strong>EOD Force Exit:</strong> If target or SL is not hit by <span class="doc-badge badge-eod">15:20</span>, the strategy auto-exits at market premium.</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Tab 2: Option Selling (Strangle) -->
-                <div class="doc-tab-content" id="sellDoc">
-                    <div class="doc-rule-grid">
-                        <div class="doc-rule-card">
-                            <h4 style="color: var(--success);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                Setup & Gap Conditions
-                            </h4>
-                            <ul>
-                                <li><strong>Any Gap Day:</strong> Requires opening gap greater than <span class="doc-badge badge-target">> 30 pts</span> (Gap Up) or less than <span class="doc-badge badge-sl">< -30 pts</span> (Gap Down).</li>
-                                <li><strong>No Directional Bias:</strong> Runs same trade regardless of whether gap is up or down.</li>
-                                <li><strong>No Pivot Touch Required:</strong> Operates entirely independently of the Pivot level (P) touch.</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="doc-rule-card">
-                            <h4 style="color: var(--warning);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                                Entry Trigger & Strikes
-                            </h4>
-                            <ul>
-                                <li><strong>Immediate Entry:</strong> Automatically fires orders exactly at <span class="doc-badge badge-eod">09:16:02</span> on all valid gap days.</li>
-                                <li><strong>Legs & Strikes:</strong> Shorts a symmetric <strong>ATM ± 100</strong> strangle:
-                                    <br>• Shorts 1 Lot (65 shares) of <strong>ATM + 100 CE</strong>.
-                                    <br>• Shorts 1 Lot (65 shares) of <strong>ATM - 100 PE</strong>.
-                                </li>
-                                <li><strong>Lots:</strong> 1 Lot each (Total margin blocked: ~₹70,000 - ₹80,000 depending on broker).</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="doc-rule-card">
-                            <h4 style="color: var(--danger);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
-                                Target, SL & Exit
-                            </h4>
-                            <ul>
-                                <li><strong>Combined SL Limit:</strong> Total M2M combined loss across CE and PE premium is capped at <span class="doc-badge badge-sl">₹7,000</span>.</li>
-                                <li><strong>Live Monitoring:</strong> Evaluates combined P&L in real-time: <code>(ce_entry - ce_ltp + pe_entry - pe_ltp) * 65</code>.</li>
-                                <li><strong>SL Trigger:</strong> If combined loss hits or exceeds -₹7,000, both legs are closed simultaneously at market.</li>
-                                <li><strong>EOD Force Exit:</strong> If combined SL is not hit, the strangle is squared off at <span class="doc-badge badge-eod">15:20</span> to collect theta decay.</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Tab 3: General Rules & Skipping -->
-                <div class="doc-tab-content" id="generalDoc">
-                    <div class="doc-rule-grid">
-                        <div class="doc-rule-card">
-                            <h4 style="color: var(--primary);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                                Safety Rules
-                            </h4>
-                            <ul>
-                                <li><strong>Thursday Expiry Skip:</strong> Both strategies are strictly disabled on Thursday to prevent 0DTE options decay and gamma risk.</li>
-                                <li><strong>Max Daily Loss Limits:</strong> Buying is limited by P±20 spot SL. Selling is protected by the combined ₹7,000 SL.</li>
-                                <li><strong>Execution Modes:</strong> Switch between Paper Trade (Simulated Orders) and Live Execution (Angel One via OpenAlgo) inside the config panel.</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="doc-rule-card">
-                            <h4 style="color: var(--secondary);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                Backtest & Historical ROI
-                            </h4>
-                            <ul>
-                                <li><strong>Option Buying (BASE):</strong> 1-year backtest profit of <span style="color: var(--success); font-weight: 600;">+₹1,11,787</span> (using 2-lot premium ROI of 721%).</li>
-                                <li><strong>Option Selling (Strangle):</strong> 1-year backtest profit of <span style="color: var(--success); font-weight: 600;">+₹1,16,100</span> (approx. 145-193% on margin).</li>
-                                <li><strong>Combined Profit:</strong> Net profit of <span style="color: var(--success); font-weight: 700;">+₹2,27,887</span> over 252 trading days in 2025-2026.</li>
-                            </ul>
+                    
+                    <!-- Tab 2: Option Selling (Strangle) -->
+                    <div class="doc-tab-content" id="sellDoc">
+                        <div class="doc-rule-grid">
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--success);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    Setup & Gap Conditions
+                                </h4>
+                                <ul>
+                                    <li><strong>Any Gap Day:</strong> Requires opening gap greater than <span class="doc-badge badge-target">> 30 pts</span> (Gap Up) or less than <span class="doc-badge badge-sl">< -30 pts</span> (Gap Down).</li>
+                                    <li><strong>No Directional Bias:</strong> Runs same trade regardless of whether gap is up or down.</li>
+                                    <li><strong>No Pivot Touch Required:</strong> Operates entirely independently of the Pivot level (P) touch.</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--warning);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    Entry Trigger & Strikes
+                                </h4>
+                                <ul>
+                                    <li><strong>Immediate Entry:</strong> Automatically fires orders exactly at <span class="doc-badge badge-eod">09:16:02</span> on all valid gap days.</li>
+                                    <li><strong>Legs & Strikes:</strong> Shorts a symmetric <strong>ATM ± 100</strong> strangle:
+                                        <br>• Shorts 1 Lot (65 shares) of <strong>ATM + 100 CE</strong>.
+                                        <br>• Shorts 1 Lot (65 shares) of <strong>ATM - 100 PE</strong>.
+                                    </li>
+                                    <li><strong>Lots:</strong> 1 Lot each (Total margin blocked: ~₹70,000 - ₹80,000 depending on broker).</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--danger);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+                                    Target, SL & Exit
+                                </h4>
+                                <ul>
+                                    <li><strong>Combined SL Limit:</strong> Total M2M combined loss across CE and PE premium is capped at <span class="doc-badge badge-sl">₹7,000</span>.</li>
+                                    <li><strong>Live Monitoring:</strong> Evaluates combined P&L in real-time: <code>(ce_entry - ce_ltp + pe_entry - pe_ltp) * 65</code>.</li>
+                                    <li><strong>SL Trigger:</strong> If combined loss hits or exceeds -₹7,000, both legs are closed simultaneously at market.</li>
+                                    <li><strong>EOD Force Exit:</strong> If combined SL is not hit, the strangle is squared off at <span class="doc-badge badge-eod">15:20</span> to collect theta decay.</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Historical Logs Table Card -->
-        <div class="card history-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--panel-border); padding-bottom: 16px;">
-                <h3 class="form-title" style="margin: 0; border: none; padding: 0;">Trade Execution Log History</h3>
-                
-                <!-- Strategy Filter Controls -->
-                <div class="filter-controls" style="display: flex; gap: 8px;">
-                    <button class="filter-btn active" onclick="filterLogs('ALL')" id="filterBtnALL" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-main); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">ALL</button>
-                    <button class="filter-btn" onclick="filterLogs('BUY')" id="filterBtnBUY" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">OPTION BUYING (BASE)</button>
-                    <button class="filter-btn" onclick="filterLogs('SELL')" id="filterBtnSELL" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">OPTION SELLING (STRANGLE)</button>
+                    
+                    <!-- Tab 3: General Rules & Skipping -->
+                    <div class="doc-tab-content" id="generalDoc">
+                        <div class="doc-rule-grid">
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--primary);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                    Safety Rules
+                                </h4>
+                                <ul>
+                                    <li><strong>Thursday Expiry Skip:</strong> Both strategies are strictly disabled on Thursday to prevent 0DTE options decay and gamma risk.</li>
+                                    <li><strong>Max Daily Loss Limits:</strong> Buying is limited by P±20 spot SL. Selling is protected by the combined ₹7,000 SL.</li>
+                                    <li><strong>Execution Modes:</strong> Switch between Paper Trade (Simulated Orders) and Live Execution (Angel One via OpenAlgo) inside the config panel.</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--secondary);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                    Backtest & Historical ROI
+                                </h4>
+                                <ul>
+                                    <li><strong>Option Buying (BASE):</strong> 1-year backtest profit of <span style="color: var(--success); font-weight: 600;">+₹1,11,787</span> (using 2-lot premium ROI of 721%).</li>
+                                    <li><strong>Option Selling (Strangle):</strong> 1-year backtest profit of <span style="color: var(--success); font-weight: 600;">+₹1,16,100</span> (approx. 145-193% on margin).</li>
+                                    <li><strong>Combined Profit:</strong> Net profit of <span style="color: var(--success); font-weight: 700;">+₹2,27,887</span> over 252 trading days in 2025-2026.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Dynamic Strategy Performance Summary -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;" id="performanceSummaryContainer">
-                <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
-                    <div>
-                        <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Buying (BASE) Net P&L</div>
-                        <div id="summaryBuyPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
-                    </div>
-                    <span class="badge badge-target" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">BUY</span>
-                </div>
-                <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
-                    <div>
-                        <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Selling (Strangle) Net P&L</div>
-                        <div id="summarySellPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
-                    </div>
-                    <span class="badge badge-strangle" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">STRANGLE</span>
-                </div>
-                <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
-                    <div>
-                        <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Combined Total Net P&L</div>
-                        <div id="summaryTotalPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
-                    </div>
-                    <span class="badge badge-eod" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">COMBINED</span>
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Symbol</th>
-                            <th>Signal / Entry Time</th>
-                            <th>Entry Price</th>
-                            <th>Exit Time</th>
-                            <th>Exit Price</th>
-                            <th>Result</th>
-                            <th>Remark</th>
-                            <th>Gap</th>
-                            <th>P / Target</th>
-                            <th>Net P&L</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logsTableBody">
-                        <tr>
-                            <td colspan="10" style="text-align: center; color: var(--text-dark); padding: 30px;">Loading historical logs...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
         </div>
 
     </div>
 
+    <!-- Fixed Navigation Bar for Mobile PWA mode -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchMobileScreen('dashboard')" id="nav-dashboard">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+            <span>Dashboard</span>
+        </button>
+        <button class="nav-item" onclick="switchMobileScreen('logs')" id="nav-logs">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <span>History Logs</span>
+        </button>
+        <button class="nav-item" onclick="switchMobileScreen('controls')" id="nav-controls">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <span>Controls</span>
+        </button>
+        <button class="nav-item" onclick="switchMobileScreen('docs')" id="nav-docs">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>Docs</span>
+        </button>
+    </nav>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <!-- Frontend logic scripts -->
     <script>
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log('PWA Service Worker Registered Successfully!'))
+                .catch((err) => console.log('PWA SW registration failed:', err));
+        }
+
+        // SPA Mobile Screen Switcher
+        function switchMobileScreen(screenId) {
+            // Deactivate all screens
+            document.querySelectorAll('.app-screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Activate target screen
+            const activeScreen = document.getElementById(`screen-${screenId}`);
+            if (activeScreen) {
+                activeScreen.classList.add('active');
+            }
+            
+            // Deactivate all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Activate target nav item
+            const activeNavItem = document.getElementById(`nav-${screenId}`);
+            if (activeNavItem) {
+                activeNavItem.classList.add('active');
+            }
+
+            // Trigger scroll reset
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         // Collapsible Documentation Functions
         function toggleDocPanel() {
             const content = document.getElementById('docPanelContent');
@@ -1491,20 +1754,17 @@
             content.classList.toggle('collapsed');
             arrow.classList.toggle('collapsed');
             
-            // Save state to localStorage to persist user preference
             const isCollapsed = content.classList.contains('collapsed');
             localStorage.setItem('docPanelCollapsed', isCollapsed ? 'true' : 'false');
         }
         
         function switchDocTab(btn, tabId) {
-            // Deactivate all tabs and tab contents
             const tabs = document.querySelectorAll('.doc-tab-btn');
             const contents = document.querySelectorAll('.doc-tab-content');
             
             tabs.forEach(tab => tab.classList.remove('active'));
             contents.forEach(content => content.classList.remove('active'));
             
-            // Activate target tab and content
             if (btn) {
                 btn.classList.add('active');
             }
@@ -1557,8 +1817,10 @@
             }, 4000);
         }
 
-        // Global state variable
+        // Global state variables
         let lastScannerStatus = null;
+        window.allLogs = [];
+        window.currentFilter = 'ALL';
 
         // Fetch Live Status & Update Metrics UI
         async function fetchStatus() {
@@ -1889,7 +2151,7 @@
                         
                         if (range > 0) {
                             let pct = ((spot - min) / range) * 100;
-                            pct = Math.max(0, Math.min(100, pct)); // clamp to 0-100%
+                            pct = Math.max(0, Math.min(100, pct)); 
                             
                             livePointer.style.left = `${pct}%`;
                             livePointer.style.display = 'flex';
@@ -1925,16 +2187,12 @@
                 const terminal = document.getElementById('terminalLog');
                 const isScrolledToBottom = terminal.scrollHeight - terminal.clientHeight <= terminal.scrollTop + 50;
                 
-                // Color codes
                 let html = text
                     .replace(/&/g, "&amp;")
                     .replace(/</g, "&lt;")
                     .replace(/>/g, "&gt;")
-                    // Highlight warnings/errors
                     .replace(/(WARN:|ERROR:)(.*)/g, '<span style="color:#f87171;font-weight:600;">$1$2</span>')
-                    // Highlight order details
                     .replace(/(ORDER placed:|TRADE OPEN|TRADE CLOSED)/g, '<span style="color:#a78bfa;font-weight:700;">$1</span>')
-                    // Highlight SL/Targets
                     .replace(/(TARGET HIT|SL HIT)/g, '<span style="color:#34d399;font-weight:700;">$1</span>')
                     .replace(/(SIGNAL at)/g, '<span style="color:#38bdf8;font-weight:700;">$1</span>')
                     .replace(/(NO TRADE)/g, '<span style="color:#9ca3af;font-weight:600;">$1</span>');
@@ -2023,7 +2281,7 @@
             if (filteredLogs.length === 0) {
                 body.innerHTML = `
                     <tr>
-                        <td colspan="10" style="text-align: center; color: var(--text-dark); padding: 30px;">
+                        <td colspan="11" style="text-align: center; color: var(--text-dark); padding: 30px;">
                             No trade executions match selected strategy filter
                         </td>
                     </tr>
@@ -2075,25 +2333,25 @@
                 const remarkVal = row.remark || '-';
                 
                 tr.innerHTML = `
-                    <td style="font-weight: 500; font-family: var(--font-mono);">${dateFormatted}</td>
-                    <td style="font-weight: 600; font-size: 11px;">
+                    <td data-label="Date" style="font-weight: 500; font-family: var(--font-mono);">${dateFormatted}</td>
+                    <td data-label="Symbol" style="font-weight: 600; font-size: 11px;">
                         ${row.symbol} ${optTypeBadge}
                     </td>
-                    <td>
+                    <td data-label="Time">
                         <div style="font-size:10px; color:var(--text-muted);">Signal: ${row.signal_time}</div>
                         <div style="font-weight:500;">Entry: ${row.entry_time}</div>
                     </td>
-                    <td style="font-family: var(--font-mono);">₹${parseFloat(row.entry_price).toFixed(2)}</td>
-                    <td style="font-family: var(--font-mono);">${displayExitTime}</td>
-                    <td style="font-family: var(--font-mono);">${displayExitPrice}</td>
-                    <td>${displayResult}</td>
-                    <td style="font-weight: 500; font-size: 11px; color: var(--text-muted);">${remarkVal}</td>
-                    <td style="color:${parseFloat(row.gap) >= 0 ? 'var(--success)' : 'var(--danger)'}; font-family: var(--font-mono);">${parseFloat(row.gap) >= 0 ? '+' : ''}${parseFloat(row.gap).toFixed(1)}</td>
-                    <td>
+                    <td data-label="Entry Option" style="font-family: var(--font-mono);">₹${parseFloat(row.entry_price).toFixed(2)}</td>
+                    <td data-label="Exit Time" style="font-family: var(--font-mono);">${displayExitTime}</td>
+                    <td data-label="Exit Price" style="font-family: var(--font-mono);">${displayExitPrice}</td>
+                    <td data-label="Result">${displayResult}</td>
+                    <td data-label="Remark" style="font-weight: 500; font-size: 11px; color: var(--text-muted);">${remarkVal}</td>
+                    <td data-label="Opening Gap" style="color:${parseFloat(row.gap) >= 0 ? 'var(--success)' : 'var(--danger)'}; font-family: var(--font-mono);">${parseFloat(row.gap) >= 0 ? '+' : ''}${parseFloat(row.gap).toFixed(1)}</td>
+                    <td data-label="Pivots Target">
                         <div style="font-size:10px; color:var(--text-muted); font-family: var(--font-mono);">P: ${pVal}</div>
                         <div style="font-size:10px; color:var(--text-muted); font-family: var(--font-mono);">Tgt: ${tgtVal}</div>
                     </td>
-                    <td>
+                    <td data-label="Net P&L Return">
                         <span class="pnl-tag ${pnlClass}" style="${row.exit_time === 'ACTIVE' ? 'animation: pulse-breathe 2s infinite;' : ''}">
                             ${pnlSign}₹${pnlVal.toLocaleString('en-IN', {minimumFractionDigits: 2})}
                             <div style="font-size: 9px; font-weight: 500; text-align: right; opacity: 0.8;">
