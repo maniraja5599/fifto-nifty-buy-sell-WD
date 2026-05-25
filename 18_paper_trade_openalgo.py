@@ -388,7 +388,7 @@ def write_log(row):
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     fieldnames = ['date','signal_time','entry_time','symbol','strike','opt_type',
                   'entry_price','exit_time','exit_price','result','pnl_pts',
-                  'pnl_rs','lot_size','paper_trade','gap','P','R1','S1','SL']
+                  'pnl_rs','lot_size','paper_trade','gap','P','R1','S1','SL','remark']
     write_header = not os.path.exists(LOG_FILE)
     with open(LOG_FILE, 'a', newline='') as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
@@ -603,6 +603,7 @@ def exit_base(res):
         'R1':          R1,
         'S1':          S1,
         'SL':          base_sl_spot,
+        'remark':      f"BASE Option Buying ({base_opt_type}) - {base_result} Exit"
     })
     
     base_active = False
@@ -676,6 +677,7 @@ def exit_strangle(res):
         'R1':          R1,
         'S1':          S1,
         'SL':          f"-{strangle_combined_sl}",
+        'remark':      f"Strangle Short Selling (ATM±100) - {strangle_result} Exit"
     })
     
     strangle_active = False

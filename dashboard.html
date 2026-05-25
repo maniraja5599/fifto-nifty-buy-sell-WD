@@ -1465,6 +1465,7 @@
                             <th>Exit Time</th>
                             <th>Exit Price</th>
                             <th>Result</th>
+                            <th>Remark</th>
                             <th>Gap</th>
                             <th>P / Target</th>
                             <th>Net P&L</th>
@@ -2071,6 +2072,7 @@
                 const displayExitTime = row.exit_time === 'ACTIVE' ? '<span style="color:var(--primary); font-weight:700; animation:pulse-breathe 1.5s infinite; display:inline-block;">RUNNING ⏳</span>' : row.exit_time;
                 const displayExitPrice = row.exit_time === 'ACTIVE' ? `LTP: ₹${parseFloat(row.exit_price).toFixed(2)}` : `₹${parseFloat(row.exit_price).toFixed(2)}`;
                 const displayResult = row.exit_time === 'ACTIVE' ? `<span class="badge badge-strangle" style="animation: pulse-breathe 1s infinite;">ACTIVE</span>` : `<span class="badge ${badgeClass}">${row.result}</span>`;
+                const remarkVal = row.remark || '-';
                 
                 tr.innerHTML = `
                     <td style="font-weight: 500; font-family: var(--font-mono);">${dateFormatted}</td>
@@ -2085,6 +2087,7 @@
                     <td style="font-family: var(--font-mono);">${displayExitTime}</td>
                     <td style="font-family: var(--font-mono);">${displayExitPrice}</td>
                     <td>${displayResult}</td>
+                    <td style="font-weight: 500; font-size: 11px; color: var(--text-muted);">${remarkVal}</td>
                     <td style="color:${parseFloat(row.gap) >= 0 ? 'var(--success)' : 'var(--danger)'}; font-family: var(--font-mono);">${parseFloat(row.gap) >= 0 ? '+' : ''}${parseFloat(row.gap).toFixed(1)}</td>
                     <td>
                         <div style="font-size:10px; color:var(--text-muted); font-family: var(--font-mono);">P: ${pVal}</div>

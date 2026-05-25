@@ -305,7 +305,8 @@ class DashboardRequestHandler(http.server.SimpleHTTPRequestHandler):
                             "P": str(status_data.get("pivots", {}).get("P", "0.0")),
                             "R1": str(status_data.get("pivots", {}).get("R1", "0.0")),
                             "S1": str(status_data.get("pivots", {}).get("S1", "0.0")),
-                            "SL": str(buy_data.get("sl_spot", "0.0"))
+                            "SL": str(buy_data.get("sl_spot", "0.0")),
+                            "remark": f"BASE Option Buying ({buy_data.get('opt_type')}) - Active Trade"
                         })
                         
                     # 2. Option Selling (Strangle) Active Trade
@@ -332,7 +333,8 @@ class DashboardRequestHandler(http.server.SimpleHTTPRequestHandler):
                             "P": str(status_data.get("pivots", {}).get("P", "0.0")),
                             "R1": str(status_data.get("pivots", {}).get("R1", "0.0")),
                             "S1": str(status_data.get("pivots", {}).get("S1", "0.0")),
-                            "SL": f"-{sell_data.get('combined_sl', 7000.0)}"
+                            "SL": f"-{sell_data.get('combined_sl', 7000.0)}",
+                            "remark": "Strangle Short Selling (ATM±100) - Active Trade"
                         })
                     
                     logs = active_trades + logs
