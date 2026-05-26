@@ -458,6 +458,19 @@ def write_log(row):
 # ── Pivot calculation from yesterday ──────────────────────────────────────
 today_str   = date.today().strftime("%Y%m%d")
 today_dt    = pd.Timestamp(today_str)
+
+# Self-healing auto-downloader on startup to prevent missing data gaps
+try:
+    print("\n[STARTUP] Running self-healing NIFTY spot database sync...")
+    from download_nse_data import download_nifty_spot
+    sync_success = download_nifty_spot()
+    if sync_success:
+        print("[STARTUP] NIFTY spot data synced successfully!\n")
+    else:
+        print("[STARTUP] WARN: NIFTY spot data sync returned False. Running with local data.\n")
+except Exception as e:
+    print(f"[STARTUP] WARN: Failed to run auto-downloader on startup: {e}. Running with local data.\n")
+
 all_dates   = list_trading_dates()
 load_live_status()
 
@@ -495,6 +508,13 @@ if not past_dates:
     sys.exit(1)
 
 prev_date = past_dates[-1]
+prev_dt = pd.Timestamp(prev_date)
+gap_days = (today_dt - prev_dt).days
+if gap_days > 4:
+    warn_msg = f"⚠️ <b>WARNING: Pivot Source Date is {gap_days} days old!</b>\n• Pivot calculated from: <code>{prev_date}</code>\n• Today's Date: <code>{today_str}</code>\n\nPlease double check if yesterday was a holiday or if data is missing!"
+    log(f"WARN: Pivot source date {prev_date} is {gap_days} days old!")
+    send_telegram_message(warn_msg)
+
 log(f"Loading pivots from {prev_date}...")
 
 prev_df = load_spot_data(prev_date, "NIFTY")
