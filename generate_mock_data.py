@@ -19,7 +19,7 @@ def calc_day_pivots(prices_prev):
     return {"P": P, "R1": R1, "S1": S1}
 
 def generate_data():
-    base_dir = r"C:\Users\manir\.gemini\antigravity\scratch\nifty-pivot-gap-strategy\data"
+    base_dir = r"C:\Users\manir\.gemini\antigravity\scratch\fifto-nifty-pivot-gap\data"
     os.makedirs(base_dir, exist_ok=True)
     
     # Generate 1 year of trading dates (from 2025-05-12 to 2026-05-21)

@@ -233,7 +233,7 @@ def run_backtest():
     print(df_trades[['date', 'direction', 'gap', 'pivot', 'opt_pnl', 'pnl_rs', 'result', 'entry_time', 'exit_time']].tail(10).to_string(index=False))
     
     # Save trades to CSV file
-    csv_path = r"C:\Users\manir\.gemini\antigravity\scratch\nifty-pivot-gap-strategy\backtest_trades.csv"
+    csv_path = r"C:\Users\manir\.gemini\antigravity\scratch\fifto-nifty-pivot-gap\backtest_trades.csv"
     df_trades.to_csv(csv_path, index=False)
     print(f"\nAll trades saved to: {csv_path}")
 

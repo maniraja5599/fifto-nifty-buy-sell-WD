@@ -2,6 +2,21 @@ import sys, os, time, csv, json, traceback
 from datetime import datetime, date
 import pandas as pd
 
+# Override built-in print for Windows terminal CP1252 / ASCII character map safety
+_original_print = print
+def print(*args, **kwargs):
+    try:
+        _original_print(*args, **kwargs)
+    except UnicodeEncodeError:
+        enc = sys.stdout.encoding or 'ascii'
+        new_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                new_args.append(arg.encode(enc, errors='replace').decode(enc))
+            else:
+                new_args.append(arg)
+        _original_print(*new_args, **kwargs)
+
 sys.path.insert(0, os.path.dirname(__file__))
 from my_util import (load_spot_data, create_spot_ohlc, list_trading_dates,
                      calculate_strike)

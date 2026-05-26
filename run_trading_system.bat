@@ -45,7 +45,7 @@ echo.
 echo Press Ctrl+C in this window to stop the system at any time.
 echo.
 
-cd /d "C:\Users\manir\.gemini\antigravity\scratch\nifty-pivot-gap-strategy"
+cd /d "C:\Users\manir\.gemini\antigravity\scratch\fifto-nifty-pivot-gap"
 python dashboard_server.py
 
 pause
