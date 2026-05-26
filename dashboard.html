@@ -1424,6 +1424,7 @@
                                 <th>Date</th>
                                 <th>Symbol</th>
                                 <th>Signal / Entry Time</th>
+                                <th>Lot Size</th>
                                 <th>Entry Price</th>
                                 <th>Exit Time</th>
                                 <th>Exit Price</th>
@@ -1436,7 +1437,7 @@
                         </thead>
                         <tbody id="logsTableBody">
                             <tr>
-                                <td colspan="11" style="text-align: center; color: var(--text-dark); padding: 30px;">Loading historical logs...</td>
+                                <td colspan="12" style="text-align: center; color: var(--text-dark); padding: 30px;">Loading historical logs...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -2281,7 +2282,7 @@
             if (filteredLogs.length === 0) {
                 body.innerHTML = `
                     <tr>
-                        <td colspan="11" style="text-align: center; color: var(--text-dark); padding: 30px;">
+                        <td colspan="12" style="text-align: center; color: var(--text-dark); padding: 30px;">
                             No trade executions match selected strategy filter
                         </td>
                     </tr>
@@ -2332,6 +2333,7 @@
                 const displayResult = row.exit_time === 'ACTIVE' ? `<span class="badge badge-strangle" style="animation: pulse-breathe 1s infinite;">ACTIVE</span>` : `<span class="badge ${badgeClass}">${row.result}</span>`;
                 const remarkVal = row.remark || '-';
                 
+                const lotSize = row.lot_size ? parseInt(row.lot_size) : '-';
                 tr.innerHTML = `
                     <td data-label="Date" style="font-weight: 500; font-family: var(--font-mono);">${dateFormatted}</td>
                     <td data-label="Symbol" style="font-weight: 600; font-size: 11px;">
@@ -2341,6 +2343,7 @@
                         <div style="font-size:10px; color:var(--text-muted);">Signal: ${row.signal_time}</div>
                         <div style="font-weight:500;">Entry: ${row.entry_time}</div>
                     </td>
+                    <td data-label="Lot Size" style="font-family: var(--font-mono); font-weight: 600; color: var(--secondary);">${lotSize}</td>
                     <td data-label="Entry Option" style="font-family: var(--font-mono);">₹${parseFloat(row.entry_price).toFixed(2)}</td>
                     <td data-label="Exit Time" style="font-family: var(--font-mono);">${displayExitTime}</td>
                     <td data-label="Exit Price" style="font-family: var(--font-mono);">${displayExitPrice}</td>
