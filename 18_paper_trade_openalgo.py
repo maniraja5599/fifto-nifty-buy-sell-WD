@@ -581,10 +581,16 @@ if os.path.exists(today_csv):
     try:
         today_df = pd.read_csv(today_csv)
         if not today_df.empty:
-            open_price = round(float(today_df.iloc[0]['price']), 2)
-            log(f"Loaded actual 09:15 open price from today's CSV: {open_price}")
+            # Use 'open' column (actual candle open) if available, else fall back to 'price' (close)
+            if 'open' in today_df.columns:
+                open_price = round(float(today_df.iloc[0]['open']), 2)
+                log(f"Loaded actual 09:15 open price from today's CSV (open col): {open_price}")
+            else:
+                open_price = round(float(today_df.iloc[0]['price']), 2)
+                log(f"WARN: No 'open' column in CSV, using close as fallback open: {open_price}")
     except Exception as e:
         print(f"WARN: Failed to read open price from today's CSV: {e}")
+
 
 if not open_price:
     time.sleep(5)  # wait a few seconds for first tick

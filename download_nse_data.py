@@ -26,6 +26,7 @@ def download_nifty_spot():
         timestamps = result.get('timestamp', [])
         quote = result.get('indicators', {}).get('quote', [{}])[0]
         closes = quote.get('close', [])
+        opens  = quote.get('open',  [])   # also fetch open prices
         
         if not timestamps or not closes:
             print("ERROR: Timestamps or closes missing in Yahoo response.")
@@ -38,7 +39,9 @@ def download_nifty_spot():
         # IST is UTC + 5:30
         ist_offset = timedelta(hours=5, minutes=30)
         
-        for ts, close in zip(timestamps, closes):
+        for i, ts in enumerate(timestamps):
+            close = closes[i] if i < len(closes) else None
+            open_ = opens[i]  if i < len(opens)  else None
             if ts is None or close is None:
                 continue
             # Convert timestamp to IST
@@ -49,9 +52,10 @@ def download_nifty_spot():
             time_str = dt_ist.strftime('%H:%M:%S')
             if '09:15:00' <= time_str <= '15:30:00':
                 records.append({
-                    'date_str': dt_ist.strftime('%Y%m%d'),
+                    'date_str':  dt_ist.strftime('%Y%m%d'),
                     'date_time': dt_ist.strftime('%Y-%m-%d %H:%M:%S'),
-                    'price': round(float(close), 2)
+                    'open':      round(float(open_), 2) if open_ is not None else round(float(close), 2),
+                    'price':     round(float(close), 2)   # close price (used for tick-level backtest)
                 })
                 
         df = pd.DataFrame(records)
@@ -87,3 +91,4 @@ def download_nifty_spot():
 
 if __name__ == "__main__":
     download_nifty_spot()
+
