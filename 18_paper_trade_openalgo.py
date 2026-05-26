@@ -181,7 +181,7 @@ def update_live_status(status, status_desc, live_spot=None):
         if base_active and base_entry_price:
             ltp_to_use = base_ltp if base_ltp else (base_entry_price + (live_spot - base_spot_at_entry) * (0.5 if base_opt_type == 'CE' else -0.5) if (live_spot and base_spot_at_entry) else base_entry_price)
             cur_buy_pnl_pts = round(ltp_to_use - base_entry_price, 2)
-            cur_buy_pnl_rs = round(cur_buy_pnl_pts * (LOT_SIZE * 2), 2)
+            cur_buy_pnl_rs = round(cur_buy_pnl_pts * (LOT_SIZE * 3), 2)  # 3 lots = 195
         elif base_exit_price is not None and base_entry_price is not None:
             cur_buy_pnl_pts = base_pnl_pts
             cur_buy_pnl_rs = base_pnl_rs
@@ -501,7 +501,7 @@ send_telegram_message(
     f"🚀 <b>NIFTY Pivot Gap Strategy Started</b>\n"
     f"📅 Date: {today_str} ({today_dt.day_name()})\n"
     f"⚙️ Mode: <b>{mode_str}</b>\n"
-    f"💼 Lot Size: {LOT_SIZE} (Buy: {LOT_SIZE*2} | Sell: {LOT_SIZE})"
+    f"💼 Lot Size: {LOT_SIZE} (Buy: {LOT_SIZE*3} = 3 lots | Sell: {LOT_SIZE} = 1 lot)"
 )
 
 # Skip Thursday
@@ -653,7 +653,7 @@ def exit_base(res):
     update_live_status("IN_TRADE", base_status_desc, get_live_nifty())
     
     log(f"PLACING BASE EXIT ORDER FOR {base_symbol} (res: {res})...")
-    place_order(base_symbol, "SELL", LOT_SIZE * 2)
+    place_order(base_symbol, "SELL", LOT_SIZE * 3)  # 3 lots = 195 shares
     
     # Get option exit price
     try:
@@ -673,7 +673,7 @@ def exit_base(res):
         log(f"WARN: BASE exit quote fetch failed, using estimate {base_exit_price:.2f}")
         
     base_pnl_pts = round(base_exit_price - base_entry_price, 2) if (base_exit_price and base_entry_price) else 0.0
-    base_pnl_rs = round(base_pnl_pts * (LOT_SIZE * 2), 2)
+    base_pnl_rs = round(base_pnl_pts * (LOT_SIZE * 3), 2)  # 3 lots = 195
     
     log(f"BASE CLOSED | Entry: {base_entry_price} | Exit: {base_exit_price} | P&L: Rs. {base_pnl_rs:+.2f}")
     pnl_sign = "🟢" if base_pnl_rs >= 0 else "🔴"
@@ -702,7 +702,7 @@ def exit_base(res):
         'result':      base_result,
         'pnl_pts':     base_pnl_pts,
         'pnl_rs':      base_pnl_rs,
-        'lot_size':    LOT_SIZE * 2,
+        'lot_size':    LOT_SIZE * 3,  # 3 lots = 195 shares
         'paper_trade': PAPER_TRADE,
         'gap':         gap,
         'P':           P,
@@ -960,8 +960,8 @@ while True:
                     base_status_desc = f"Placing BASE BUY order for {base_symbol}..."
                     update_live_status("SCANNING", base_status_desc, live_spot)
                     
-                    # Place Buy Order (2 lots, 130 shares)
-                    base_order_id = place_order(base_symbol, "BUY", LOT_SIZE * 2)
+                    # Place Buy Order (3 lots, 195 shares) — LOCKED v4.0
+                    base_order_id = place_order(base_symbol, "BUY", LOT_SIZE * 3)
                     
                     if base_order_id:
                         base_entry_time = now_time()
@@ -984,7 +984,7 @@ while True:
                         send_telegram_message(
                             f"🛒 <b>Strategy 1: BASE Option BUY Entry Executed!</b> 🟢\n"
                             f"• <b>Symbol:</b> <code>{base_symbol}</code> (Strike: {base_strike} {base_opt_type})\n"
-                            f"• <b>Quantity:</b> {LOT_SIZE * 2} (2 Lots)\n"
+                            f"• <b>Quantity:</b> {LOT_SIZE * 3} (3 Lots — LOCKED v4.0)\n"
                             f"• <b>NIFTY Entry Spot:</b> {base_spot_at_entry}\n"
                             f"• <b>Option Entry Price:</b> ₹{base_entry_price}\n"
                             f"• <b>Target Spot Level:</b> {base_target_spot}\n"
