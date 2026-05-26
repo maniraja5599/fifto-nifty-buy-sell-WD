@@ -10,7 +10,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 # Paths
 backtest_dir = r"C:\Users\manir\Desktop\Backtest"
-output_html = r"e:\Projects\FiFTO Backtest Engine MANI\portfolio_dashboard.html"
+output_html = r"e:\Projects\fifto-nifty-pivot-gap-engine\portfolio_dashboard.html"
 
 # ----------------------------------------------------
 # 1. Market Regimes Definition
