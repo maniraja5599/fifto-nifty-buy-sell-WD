@@ -99,6 +99,62 @@ if os.path.exists(CONFIG_FILE):
 
 STATUS_FILE = os.path.join(os.path.dirname(__file__), "data", "live_status.json")
 
+def load_live_status():
+    """Load active trades from live_status.json on startup to recover state."""
+    global strangle_active, strangle_entered, strangle_ce_symbol, strangle_pe_symbol
+    global strangle_ce_strike, strangle_pe_strike, strangle_ce_entry_price, strangle_pe_entry_price
+    global strangle_entry_time, spot_at_0916
+    global base_active, base_entered, base_symbol, base_strike, base_opt_type
+    global base_entry_time, base_entry_price, base_target_spot, base_sl_spot, base_spot_at_entry, base_signal_time
+
+    if not os.path.exists(STATUS_FILE):
+        return
+        
+    try:
+        with open(STATUS_FILE, 'r') as f:
+            data = json.load(f)
+            
+        # Verify if the status belongs to today's date
+        status_date = data.get('date')
+        if status_date != today_str:
+            print(f"Status file belongs to another date ({status_date}), skipping recovery.")
+            return
+            
+        # Recover Strangle
+        sell_data = data.get('selling', {})
+        if sell_data.get('in_trade'):
+            strangle_active = True
+            strangle_entered = True
+            strangle_ce_symbol = sell_data.get('ce_symbol')
+            strangle_pe_symbol = sell_data.get('pe_symbol')
+            strangle_ce_strike = sell_data.get('ce_strike')
+            strangle_pe_strike = sell_data.get('pe_strike')
+            strangle_ce_entry_price = sell_data.get('ce_entry_price')
+            strangle_pe_entry_price = sell_data.get('pe_entry_price')
+            strangle_entry_time = sell_data.get('entry_time')
+            # Fallback for spot_at_0916
+            spot_at_0916 = data.get('live_data', {}).get('spot')
+            print(f"SUCCESSFULLY RECOVERED RUNNING STRANGLE: CE={strangle_ce_symbol} @ {strangle_ce_entry_price} | PE={strangle_pe_symbol} @ {strangle_pe_entry_price}")
+            
+        # Recover BASE Buying
+        buy_data = data.get('buying', {})
+        if buy_data.get('in_trade'):
+            base_active = True
+            base_entered = True
+            base_symbol = buy_data.get('symbol')
+            base_strike = buy_data.get('strike')
+            base_opt_type = buy_data.get('opt_type')
+            base_entry_time = buy_data.get('entry_time')
+            base_entry_price = buy_data.get('entry_price')
+            base_target_spot = buy_data.get('target_spot')
+            base_sl_spot = buy_data.get('sl_spot')
+            base_signal_time = buy_data.get('entry_time') # estimate
+            base_spot_at_entry = data.get('live_data', {}).get('spot')
+            print(f"SUCCESSFULLY RECOVERED RUNNING BASE BUY: {base_symbol} @ {base_entry_price}")
+            
+    except Exception as e:
+        print(f"WARN: Failed to load live status for recovery: {e}")
+
 def update_live_status(status, status_desc, live_spot=None):
     """Save current state to JSON for the web UI."""
     try:
@@ -403,6 +459,7 @@ def write_log(row):
 today_str   = date.today().strftime("%Y%m%d")
 today_dt    = pd.Timestamp(today_str)
 all_dates   = list_trading_dates()
+load_live_status()
 
 print()
 print("=" * 60)
@@ -481,14 +538,27 @@ while now_hm() < MARKET_OPEN:
     time.sleep(10)
 
 # ── Get today's open and check gap ────────────────────────────────────────
-time.sleep(5)  # wait a few seconds for first tick
 open_price = None
-for attempt in range(10):
-    open_price = get_live_nifty()
-    if open_price:
-        break
-    update_live_status("WAIT_MARKET", f"Waiting for first tick... Attempt {attempt+1}/10")
-    time.sleep(3)
+
+# First, try to fetch the actual 09:15:00 open price from today's CSV file if we started late or if it is already available
+today_csv = os.path.join(os.path.dirname(__file__), "data", f"{today_str}_NIFTY.csv")
+if os.path.exists(today_csv):
+    try:
+        today_df = pd.read_csv(today_csv)
+        if not today_df.empty:
+            open_price = round(float(today_df.iloc[0]['price']), 2)
+            log(f"Loaded actual 09:15 open price from today's CSV: {open_price}")
+    except Exception as e:
+        print(f"WARN: Failed to read open price from today's CSV: {e}")
+
+if not open_price:
+    time.sleep(5)  # wait a few seconds for first tick
+    for attempt in range(10):
+        open_price = get_live_nifty()
+        if open_price:
+            break
+        update_live_status("WAIT_MARKET", f"Waiting for first tick... Attempt {attempt+1}/10")
+        time.sleep(3)
 
 if not open_price:
     log("ERROR: Could not fetch opening price. Check OpenAlgo connection.")
