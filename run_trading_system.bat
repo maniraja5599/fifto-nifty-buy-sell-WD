@@ -46,6 +46,9 @@ echo Press Ctrl+C in this window to stop the system at any time.
 echo.
 
 cd /d "C:\Users\manir\.gemini\antigravity\scratch\fifto-nifty-pivot-gap"
-python dashboard_server.py
+
+start "FiFTO Dashboard Server" python dashboard_server.py
+timeout /t 3 >nul
+python 18_paper_trade_openalgo.py
 
 pause
