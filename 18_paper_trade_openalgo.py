@@ -589,14 +589,15 @@ gap = round(open_price - prev_close, 2)
 log(f"Today open={open_price}  Prev close={prev_close}  Gap={'+' if gap>=0 else ''}{gap} pts")
 
 # -- Determine direction ----------------------------------------------------
-if gap > GAP_THRESH and open_price >= P:
+thresh = abs(GAP_THRESH)
+if gap > thresh and open_price >= P:
     direction='LONG';  opt_type='CE'; strat='A - Gap Up -> ATM CE Buy'
     target_spot=R1;    sl_spot=round(P-SL_PTS, 2)
-elif gap < -GAP_THRESH and open_price < P:
+elif gap < -thresh and open_price < P:
     direction='SHORT'; opt_type='PE'; strat='B - Gap Down -> ATM PE Buy'
     target_spot=S1;    sl_spot=round(P+SL_PTS, 2)
 else:
-    reason = f"Gap only {abs(gap):.0f}pts (<{GAP_THRESH})" if abs(gap)<=GAP_THRESH \
+    reason = f"Gap only {abs(gap):.0f}pts (<{thresh})" if abs(gap)<=thresh \
              else f"Gap {'up' if gap>0 else 'down'} but open {'below' if gap>0 else 'above'} P"
     log(f"NO TRADE - {reason}")
     update_live_status("NO_TRADE", f"NO TRADE - {reason}")
@@ -1072,7 +1073,18 @@ while True:
         log("All strategies executed and closed for the day. Exiting loop.")
         break
         
-    time.sleep(POLL_EXIT_SEC)
+    # Dynamic loop sleep:
+    # 1. Near Strategy 2 entry time (09:16:02), run loop every 0.5s to ensure execution within 1-2s.
+    # 2. When positions are active, monitor every 2s for precise high-frequency stop loss exits.
+    # 3. Idle monitoring runs at the configured POLL_EXIT_SEC (15s) to conserve API limits.
+    current_time_str = now_time()
+    sleep_time = POLL_EXIT_SEC
+    if not strangle_entered and "09:15:30" <= current_time_str <= "09:16:05":
+        sleep_time = 0.5
+    elif base_active or strangle_active:
+        sleep_time = 2.0
+        
+    time.sleep(sleep_time)
 
 update_live_status("CLOSED", "Closed. Strategy run finished.", live_spot)
 
