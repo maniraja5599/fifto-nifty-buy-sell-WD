@@ -78,7 +78,7 @@ GAP_THRESH      = 30       # minimum gap in pts
 P_TOL           = 10       # pivot touch tolerance pts
 SL_PTS          = 20       # SL distance from P in pts
 ENTRY_CUTOFF    = "13:00"  # no new entries after this
-EOD_EXIT        = "15:10"  # force exit time (must be before Angel One MIS auto-squareoff at 15:15)
+EOD_EXIT        = "15:20"  # force exit time (NRML - no broker auto-squareoff restriction)
 
 PAPER_TRADE     = True     # True = paper trade only (no real orders)
 POLL_SIGNAL_SEC = 30       # how often to check for signal (seconds)
@@ -427,7 +427,7 @@ def place_order(symbol, action, qty):
             action=action,         # "BUY" or "SELL"
             quantity=qty,
             price_type="MARKET",
-            product="MIS",         # intraday
+            product="NRML",        # NRML = no broker auto-squareoff at 15:15
         )
         log(f"ORDER placed: {action} {qty}x{symbol}  -> {resp}")
         if isinstance(resp, dict):

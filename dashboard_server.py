@@ -28,7 +28,7 @@ DEFAULT_CONFIG = {
     "P_TOL": 10.0,
     "SL_PTS": 20.0,
     "ENTRY_CUTOFF": "13:00",
-    "EOD_EXIT": "15:10",
+    "EOD_EXIT": "15:20",
     "PAPER_TRADE": True
 }
 
