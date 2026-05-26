@@ -286,56 +286,80 @@ class DashboardRequestHandler(http.server.SimpleHTTPRequestHandler):
                     # 1. Option Buying (BASE) Active Trade
                     if status_data.get("buying", {}).get("in_trade"):
                         buy_data = status_data["buying"]
-                        active_trades.append({
-                            "date": status_data.get("date", datetime.now().strftime("%Y%m%d")),
-                            "signal_time": buy_data.get("entry_time", "-"),
-                            "entry_time": buy_data.get("entry_time", "-"),
-                            "symbol": buy_data.get("symbol", "BASE"),
-                            "strike": str(buy_data.get("strike", "-")),
-                            "opt_type": buy_data.get("opt_type", "CE"),
-                            "entry_price": str(buy_data.get("entry_price", "0.0")),
-                            "exit_time": "ACTIVE",
-                            "exit_price": str(round((buy_data.get("entry_price") or 0.0) + (buy_data.get("pnl_pts") or 0.0), 2)),
-                            "result": "ACTIVE 🟢" if (buy_data.get("pnl_rs") or 0.0) >= 0 else "ACTIVE 🔴",
-                            "pnl_pts": str(buy_data.get("pnl_pts", "0.0")),
-                            "pnl_rs": str(buy_data.get("pnl_rs", "0.0")),
-                            "lot_size": str(status_data.get("lot_size", 65) * 2),
-                            "paper_trade": str(status_data.get("mode") == "PAPER"),
-                            "gap": str(status_data.get("gap", {}).get("gap_pts", "0.0")),
-                            "P": str(status_data.get("pivots", {}).get("P", "0.0")),
-                            "R1": str(status_data.get("pivots", {}).get("R1", "0.0")),
-                            "S1": str(status_data.get("pivots", {}).get("S1", "0.0")),
-                            "SL": str(buy_data.get("sl_spot", "0.0")),
-                            "remark": f"BASE Option Buying ({buy_data.get('opt_type')}) - Active Trade"
-                        })
+                        b_date = status_data.get("date", datetime.now().strftime("%Y%m%d"))
+                        b_symbol = buy_data.get("symbol", "BASE")
+                        b_entry_time = buy_data.get("entry_time", "-")
+                        
+                        # Avoid duplicate if already written to CSV
+                        already_logged = any(
+                            l.get("date") == b_date and 
+                            l.get("symbol") == b_symbol and 
+                            l.get("entry_time") == b_entry_time 
+                            for l in logs
+                        )
+                        if not already_logged:
+                            active_trades.append({
+                                "date": b_date,
+                                "signal_time": buy_data.get("entry_time", "-"),
+                                "entry_time": b_entry_time,
+                                "symbol": b_symbol,
+                                "strike": str(buy_data.get("strike", "-")),
+                                "opt_type": buy_data.get("opt_type", "CE"),
+                                "entry_price": str(buy_data.get("entry_price", "0.0")),
+                                "exit_time": "ACTIVE",
+                                "exit_price": str(round((buy_data.get("entry_price") or 0.0) + (buy_data.get("pnl_pts") or 0.0), 2)),
+                                "result": "ACTIVE 🟢" if (buy_data.get("pnl_rs") or 0.0) >= 0 else "ACTIVE 🔴",
+                                "pnl_pts": str(buy_data.get("pnl_pts", "0.0")),
+                                "pnl_rs": str(buy_data.get("pnl_rs", "0.0")),
+                                "lot_size": str(status_data.get("lot_size", 65) * 3), # Locked v4.0 is 3 lots (195 shares)
+                                "paper_trade": str(status_data.get("mode") == "PAPER"),
+                                "gap": str(status_data.get("gap", {}).get("gap_pts", "0.0")),
+                                "P": str(status_data.get("pivots", {}).get("P", "0.0")),
+                                "R1": str(status_data.get("pivots", {}).get("R1", "0.0")),
+                                "S1": str(status_data.get("pivots", {}).get("S1", "0.0")),
+                                "SL": str(buy_data.get("sl_spot", "0.0")),
+                                "remark": f"BASE Option Buying ({buy_data.get('opt_type')}) - Active Trade"
+                            })
                         
                     # 2. Option Selling (Strangle) Active Trade
                     if status_data.get("selling", {}).get("in_trade"):
                         sell_data = status_data["selling"]
-                        ce_ltp = sell_data.get("ce_ltp") or sell_data.get("ce_entry_price") or 0.0
-                        pe_ltp = sell_data.get("pe_ltp") or sell_data.get("pe_entry_price") or 0.0
-                        active_trades.append({
-                            "date": status_data.get("date", datetime.now().strftime("%Y%m%d")),
-                            "signal_time": sell_data.get("entry_time", "-"),
-                            "entry_time": sell_data.get("entry_time", "-"),
-                            "symbol": f"STRANGLE_{sell_data.get('pe_strike')}PE_{sell_data.get('ce_strike')}CE",
-                            "strike": f"{sell_data.get('pe_strike')}/{sell_data.get('ce_strike')}",
-                            "opt_type": "STRANGLE",
-                            "entry_price": str((sell_data.get("ce_entry_price") or 0.0) + (sell_data.get("pe_entry_price") or 0.0)),
-                            "exit_time": "ACTIVE",
-                            "exit_price": str(round(ce_ltp + pe_ltp, 2)),
-                            "result": "ACTIVE 🟢" if (sell_data.get("pnl_rs") or 0.0) >= 0 else "ACTIVE 🔴",
-                            "pnl_pts": str(sell_data.get("pnl_pts", "0.0")),
-                            "pnl_rs": str(sell_data.get("pnl_rs", "0.0")),
-                            "lot_size": str(status_data.get("lot_size", 65)),
-                            "paper_trade": str(status_data.get("mode") == "PAPER"),
-                            "gap": str(status_data.get("gap", {}).get("gap_pts", "0.0")),
-                            "P": str(status_data.get("pivots", {}).get("P", "0.0")),
-                            "R1": str(status_data.get("pivots", {}).get("R1", "0.0")),
-                            "S1": str(status_data.get("pivots", {}).get("S1", "0.0")),
-                            "SL": f"-{sell_data.get('combined_sl', 7000.0)}",
-                            "remark": "Strangle Short Selling (ATM±100) - Active Trade"
-                        })
+                        s_date = status_data.get("date", datetime.now().strftime("%Y%m%d"))
+                        s_symbol = f"STRANGLE_{sell_data.get('pe_strike')}PE_{sell_data.get('ce_strike')}CE"
+                        s_entry_time = sell_data.get("entry_time", "-")
+                        
+                        # Avoid duplicate if already written to CSV
+                        already_logged = any(
+                            l.get("date") == s_date and 
+                            l.get("symbol") == s_symbol and 
+                            l.get("entry_time") == s_entry_time 
+                            for l in logs
+                        )
+                        if not already_logged:
+                            ce_ltp = sell_data.get("ce_ltp") or sell_data.get("ce_entry_price") or 0.0
+                            pe_ltp = sell_data.get("pe_ltp") or sell_data.get("pe_entry_price") or 0.0
+                            active_trades.append({
+                                "date": s_date,
+                                "signal_time": s_entry_time,
+                                "entry_time": s_entry_time,
+                                "symbol": s_symbol,
+                                "strike": f"{sell_data.get('pe_strike')}/{sell_data.get('ce_strike')}",
+                                "opt_type": "STRANGLE",
+                                "entry_price": str((sell_data.get("ce_entry_price") or 0.0) + (sell_data.get("pe_entry_price") or 0.0)),
+                                "exit_time": "ACTIVE",
+                                "exit_price": str(round(ce_ltp + pe_ltp, 2)),
+                                "result": "ACTIVE 🟢" if (sell_data.get("pnl_rs") or 0.0) >= 0 else "ACTIVE 🔴",
+                                "pnl_pts": str(sell_data.get("pnl_pts", "0.0")),
+                                "pnl_rs": str(sell_data.get("pnl_rs", "0.0")),
+                                "lot_size": str(status_data.get("lot_size", 65)),
+                                "paper_trade": str(status_data.get("mode") == "PAPER"),
+                                "gap": str(status_data.get("gap", {}).get("gap_pts", "0.0")),
+                                "P": str(status_data.get("pivots", {}).get("P", "0.0")),
+                                "R1": str(status_data.get("pivots", {}).get("R1", "0.0")),
+                                "S1": str(status_data.get("pivots", {}).get("S1", "0.0")),
+                                "SL": f"-{sell_data.get('combined_sl', 7000.0)}",
+                                "remark": "Strangle Short Selling (ATM±100) - Active Trade"
+                            })
                     
                     logs = active_trades + logs
                 except Exception as ex:
