@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fifto NIFTY Buy-Sell Web App</title>
+    <title>Fifto Admin & Configuration Console</title>
     
     <!-- PWA Metadata -->
     <link rel="manifest" href="/manifest.json">
@@ -1053,16 +1053,11 @@
                 display: flex;
             }
 
-            /* Show active screen, hide others in App mode */
+            /* Show all screens in admin page */
             .app-screen {
-                display: none;
-                opacity: 0;
-                animation: fadeIn 0.25s ease-in-out forwards;
-            }
-
-            .app-screen.active {
-                display: block;
-                opacity: 1;
+                display: block !important;
+                opacity: 1 !important;
+                margin-bottom: 24px;
             }
 
             /* Table Responsive styling to Cards */
@@ -1158,7 +1153,7 @@
                 </div>
             </div>
             <div class="header-controls">
-                <a href="/admin.html" class="btn-nav" style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 20px; padding: 6px 14px; font-family: var(--font-display); font-size: 11px; font-weight: 700; color: var(--secondary); border-color: rgba(0, 176, 255, 0.3); text-decoration: none; display: flex; align-items: center; gap: 4px; transition: var(--transition); box-shadow: 0 0 8px rgba(0,0,0,0.3);" onmouseover="this.style.borderColor='var(--secondary)'; this.style.background='var(--panel-hover)';" onmouseout="this.style.borderColor='rgba(0, 176, 255, 0.3)'; this.style.background='var(--panel-bg)';">Admin Panel & Logs ➔</a>
+                <a href="/" class="btn-nav" style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 20px; padding: 6px 14px; font-family: var(--font-display); font-size: 11px; font-weight: 700; color: var(--text-main); text-decoration: none; display: flex; align-items: center; gap: 4px; transition: var(--transition); box-shadow: 0 0 8px rgba(0,0,0,0.3);" onmouseover="this.style.borderColor='var(--primary)'; this.style.background='var(--panel-hover)';" onmouseout="this.style.borderColor='var(--panel-border)'; this.style.background='var(--panel-bg)';">← Live Dashboard</a>
                 <div class="status-badge" id="liveClockBadge">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                     <span id="liveClock" style="font-family: var(--font-mono); font-weight:600;">--:--:--</span>
@@ -1224,175 +1219,50 @@
                 </div>
             </div>
 
-            <!-- Visual Pivots Gauge Section -->
-            <div class="card pivots-section" style="margin-bottom: 24px;">
-                <div class="gauge-title">
-                    <span style="display:flex; align-items:center; gap:6px;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>
-                        NIFTY 50 Spot Pivot Gauge
-                    </span>
-                    <span id="pivotsDate" style="font-size:12px; color: var(--text-muted); font-family: var(--font-mono);">Trading Date: --</span>
-                </div>
-                <div class="pivots-track-container">
-                    <div class="pivots-track">
-                        <!-- Markers -->
-                        <div class="pivot-marker s-node" style="left: 0%;">
-                            <span class="pivot-label">S2</span>
-                            <span class="pivot-node"></span>
-                            <span class="pivot-value" id="valS2">--</span>
-                        </div>
-                        <div class="pivot-marker s-node" style="left: 25%;">
-                            <span class="pivot-label">S1 (PE Target)</span>
-                            <span class="pivot-node"></span>
-                            <span class="pivot-value" id="valS1">--</span>
-                        </div>
-                        <div class="pivot-marker p-node" style="left: 50%;">
-                            <span class="pivot-label">P (Pivot)</span>
-                            <span class="pivot-node"></span>
-                            <span class="pivot-value" id="valP">--</span>
-                        </div>
-                        <div class="pivot-marker r-node" style="left: 75%;">
-                            <span class="pivot-label">R1 (CE Target)</span>
-                            <span class="pivot-node"></span>
-                            <span class="pivot-value" id="valR1">--</span>
-                        </div>
-                        <div class="pivot-marker r-node" style="left: 100%;">
-                            <span class="pivot-label">R2</span>
-                            <span class="pivot-node"></span>
-                            <span class="pivot-value" id="valR2">--</span>
-                        </div>
-                        
-                        <!-- Live Price Pointer -->
-                        <div class="live-price-pointer" id="livePointer" style="left: 50%; display: none;">
-                            <span class="pointer-label" id="pointerVal">--</span>
-                            <span class="pointer-arrow"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
+        </div>
 
-            <!-- Dual-Strategy Active Telemetry -->
-            <div class="strategy-grid">
-                
-                <!-- Strategy 1: Option Buying (BASE) -->
-                <div class="card strategy-card buying">
-                    <div class="strat-header">
-                        <span class="strat-title" style="color: var(--success);">
-                            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color: var(--success); box-shadow: 0 0 8px var(--success);"></span>
-                            Strategy 1: Option Buying (BASE)
-                        </span>
-                        <div class="status-badge status-OFFLINE" id="buyStatusBadge" style="padding:4px 8px; font-size:9px;">
-                            <span class="status-dot"></span>
-                            <span id="buyStatusText">Offline</span>
-                        </div>
-                    </div>
-                    <div class="strat-desc" id="buyStatusDesc">Scanning status inactive.</div>
+        <!-- SCREEN 2: HISTORY LOGS AND SUMMARIES -->
+        <div id="screen-logs" class="app-screen">
+            
+            <!-- Historical Logs Table Card -->
+            <div class="card history-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--panel-border); padding-bottom: 16px;">
+                    <h3 class="form-title" style="margin: 0; border: none; padding: 0;">Trade Execution Log History</h3>
                     
-                    <div class="strat-data-grid">
-                        <div class="strat-data-item">
-                            <div class="strat-data-label">Active Symbol</div>
-                            <div class="strat-data-value" id="buyActiveSymbol">-</div>
-                        </div>
-                        <div class="strat-data-item">
-                            <div class="strat-data-label">Entry Details</div>
-                            <div class="strat-data-value" id="buyEntryDetails">-</div>
-                        </div>
-                        <div class="strat-data-item">
-                            <div class="strat-data-label">Target Spot (R1/S1)</div>
-                            <div class="strat-data-value" id="buyTargetDetails">-</div>
-                        </div>
-                        <div class="strat-data-item">
-                            <div class="strat-data-label">Stop Loss Spot (P ± 20)</div>
-                            <div class="strat-data-value" id="buySLDetails">-</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Dynamic Spot Distance Bars -->
-                    <div id="buyDistanceIndicators" style="display: none;">
-                        <div class="distance-bar-container">
-                            <div class="distance-bar-fill" id="buyTargetFill" style="background-color: var(--success); width: 0%;"></div>
-                            <span class="distance-bar-text" id="buyTargetDistText">To Target: --</span>
-                        </div>
-                        <div class="distance-bar-container">
-                            <div class="distance-bar-fill" id="buySLFill" style="background-color: var(--danger); width: 0%;"></div>
-                            <span class="distance-bar-text" id="buySLDistText">To SL: --</span>
-                        </div>
-                    </div>
-                    
-                    <div class="strat-pnl-section" style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                            <span class="strat-pnl-label" id="buyPnlLabel">Active Floating P&L (3-Lots)</span>
-                            <span class="strat-pnl-value" id="buyPnlText" style="color: var(--text-dark); font-size: 20px;">₹0.00</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
-                            <span class="strat-pnl-label" id="buyCapitalText">Capital: ₹0</span>
-                            <span class="strat-pnl-value" id="buyReturnText" style="font-size: 14px; font-weight: 700; color: var(--text-muted);">0.00%</span>
-                        </div>
+                    <!-- Strategy Filter Controls -->
+                    <div class="filter-controls" style="display: flex; gap: 8px;">
+                        <button class="filter-btn active" onclick="filterLogs('ALL')" id="filterBtnALL" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-main); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">ALL</button>
+                        <button class="filter-btn" onclick="filterLogs('BUY')" id="filterBtnBUY" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">OPTION BUYING (BASE)</button>
+                        <button class="filter-btn" onclick="filterLogs('SELL')" id="filterBtnSELL" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 11px; font-weight:700; cursor:pointer; transition: var(--transition);">OPTION SELLING (STRANGLE)</button>
                     </div>
                 </div>
-                
-                <!-- Strategy 2: Option Selling (Strangle) -->
-                <div class="card strategy-card selling">
-                    <div class="strat-header">
-                        <span class="strat-title" style="color: var(--danger);">
-                            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color: var(--danger); box-shadow: 0 0 8px var(--danger);"></span>
-                            Strategy 2: Short Strangle (ATM±100)
-                        </span>
-                        <div class="status-badge status-OFFLINE" id="sellStatusBadge" style="padding:4px 8px; font-size:9px;">
-                            <span class="status-dot"></span>
-                            <span id="sellStatusText">Offline</span>
-                        </div>
-                    </div>
-                    <div class="strat-desc" id="sellStatusDesc">Scanning status inactive.</div>
-                    
-                    <div class="strat-data-grid">
-                        <div class="strat-data-item" style="grid-column: span 2;">
-                            <div class="strat-data-label">Short CE Option Leg</div>
-                            <div class="strat-data-value" id="sellCeDetails">-</div>
-                        </div>
-                        <div class="strat-data-item" style="grid-column: span 2;">
-                            <div class="strat-data-label">Short PE Option Leg</div>
-                            <div class="strat-data-value" id="sellPeDetails">-</div>
-                        </div>
-                        <div class="strat-data-item">
-                            <div class="strat-data-label">Entry Time</div>
-                            <div class="strat-data-value" id="sellEntryTime">-</div>
-                        </div>
-                        <div class="strat-data-item">
-                            <div class="strat-data-label">Combined SL Target</div>
-                            <div class="strat-data-value" id="sellSlTrigger" style="color: var(--danger);">-</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Dynamic Strangle SL Progress Bar -->
-                    <div id="sellSLProgressContainer" style="display: none; margin-top: 12px;">
-                        <div class="distance-bar-container" style="height:26px;">
-                            <div class="distance-bar-fill" id="sellSLProgressFill" style="background-color: var(--danger); width: 0%;"></div>
-                            <span class="distance-bar-text" id="sellSLProgressText" style="font-size:9.5px;">Combined Loss: --</span>
-                        </div>
-                    </div>
-                    
-                    <div class="strat-pnl-section" style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                            <span class="strat-pnl-label">Active Floating P&L (1-Lot)</span>
-                            <span class="strat-pnl-value" id="sellPnlText" style="color: var(--text-dark); font-size: 20px;">₹0.00</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
-                            <span class="strat-pnl-label">Capital (Fixed): ₹2,50,000</span>
-                            <span class="strat-pnl-value" id="sellReturnText" style="font-size: 14px; font-weight: 700; color: var(--text-muted);">0.00%</span>
-                        </div>
-                    </div>
-                </div>
-                
-            </div>
 
-            <!-- Recent Trade Executions Card -->
-            <div class="card history-card" style="margin-top: 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--panel-border); padding-bottom: 12px;">
-                    <h3 class="form-title" style="margin: 0; border: none; padding: 0; font-size: 16px;">Recent Trade Executions</h3>
-                    <a href="/admin.html" class="btn-link" style="font-family: var(--font-display); font-size: 11px; font-weight: 700; color: var(--secondary); text-decoration: none; border: 1px solid rgba(0, 176, 255, 0.3); border-radius: 12px; padding: 4px 10px; background: rgba(0, 176, 255, 0.05); transition: var(--transition);" onmouseover="this.style.background='rgba(0, 176, 255, 0.15)'; this.style.borderColor='var(--secondary)';" onmouseout="this.style.background='rgba(0, 176, 255, 0.05)'; this.style.borderColor='rgba(0, 176, 255, 0.3)';">View Full Logs & Admin Panel ➔</a>
+                <!-- Dynamic Strategy Performance Summary -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;" id="performanceSummaryContainer">
+                    <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
+                        <div>
+                            <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Buying (BASE) Net P&L</div>
+                            <div id="summaryBuyPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
+                        </div>
+                        <span class="badge badge-target" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">BUY</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
+                        <div>
+                            <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Selling (Strangle) Net P&L</div>
+                            <div id="summarySellPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
+                        </div>
+                        <span class="badge badge-strangle" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">STRANGLE</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 12px rgba(255,255,255,0.01);">
+                        <div>
+                            <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight:600;">Combined Total Net P&L</div>
+                            <div id="summaryTotalPnl" style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text-main); margin-top: 6px;">₹0.00</div>
+                        </div>
+                        <span class="badge badge-eod" style="font-size: 9px; font-weight: 700; padding: 3px 8px;">COMBINED</span>
+                    </div>
                 </div>
-                
+
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -1413,7 +1283,7 @@
                         </thead>
                         <tbody id="logsTableBody">
                             <tr>
-                                <td colspan="12" style="text-align: center; color: var(--text-dark); padding: 20px;">Loading trade executions...</td>
+                                <td colspan="12" style="text-align: center; color: var(--text-dark); padding: 30px;">Loading historical logs...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1422,7 +1292,249 @@
 
         </div>
 
-        
+        <!-- SCREEN 3: CONFIGURATION AND ENGINE PROCESS CONTROLS -->
+        <div id="screen-controls" class="app-screen">
+            
+            <div class="main-grid">
+                <!-- Left: Controls Form -->
+                <div class="card">
+                    <h3 class="form-title">Strategy Engine Configuration</h3>
+                    
+                    <div class="form-group">
+                        <label>OpenAlgo API Key</label>
+                        <input type="password" id="OPENALGO_API_KEY" placeholder="Paste your API key here">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Lot Size (NIFTY)</label>
+                            <input type="number" id="LOT_SIZE" value="65">
+                        </div>
+                        <div class="form-group">
+                            <label>Min Gap Threshold (pts)</label>
+                            <input type="number" id="GAP_THRESH" value="30" step="any">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>P Touch Tolerance (pts)</label>
+                            <input type="number" id="P_TOL" value="10" step="any">
+                        </div>
+                        <div class="form-group">
+                            <label>Stop Loss Spot (pts)</label>
+                            <input type="number" id="SL_PTS" value="20" step="any">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Entry Cutoff Time</label>
+                            <input type="text" id="ENTRY_CUTOFF" value="13:00">
+                        </div>
+                        <div class="form-group">
+                            <label>EOD Exit Time</label>
+                            <input type="text" id="EOD_EXIT" value="15:20">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>OpenAlgo Server URL</label>
+                        <input type="text" id="OPENALGO_HOST" value="http://127.0.0.1:5000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Execution Mode</label>
+                        <select id="PAPER_TRADE">
+                            <option value="true">Paper Trade (Simulated Orders)</option>
+                            <option value="false">Live Execution (⚠️ Real Orders)</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                        <button class="btn btn-start" id="btnStart" onclick="controlScanner('start')" style="flex-grow: 1;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            Start Scanner
+                        </button>
+                        <button class="btn btn-stop" id="btnStop" onclick="controlScanner('stop')" style="flex-grow: 1;" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+                            Stop Scanner
+                        </button>
+                    </div>
+                    
+                    <button class="btn" onclick="saveConfig()" style="width: 100%; margin-top: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border); color: var(--text-main);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        Save Configuration
+                    </button>
+                </div>
+                
+                <!-- Right: Live Terminal card -->
+                <div class="card terminal-card">
+                    <div class="terminal-header">
+                        <span style="font-family: var(--font-display); font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                            Live System Output Logs
+                        </span>
+                        <div>
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                        </div>
+                    </div>
+                    <div class="terminal-body" id="terminalLog">Starting terminal logs fetcher...</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SCREEN 4: SPECIFICATION AND GENERAL DOCUMENTATION -->
+        <div id="screen-docs" class="app-screen">
+            
+            <!-- Collapsible Documentation Panel -->
+            <div class="card doc-card">
+                <div class="doc-header" onclick="toggleDocPanel()">
+                    <h3>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary);"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        NIFTY Pivot Gap 3.0 Specs & Logic Rules
+                    </h3>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="doc-toggle-icon" id="docToggleArrow"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                
+                <div class="doc-content" id="docPanelContent">
+                    <div class="doc-tabs">
+                        <button class="doc-tab-btn active" onclick="switchDocTab(this, 'buyDoc')">Strategy 1: BASE Buy</button>
+                        <button class="doc-tab-btn" onclick="switchDocTab(this, 'sellDoc')">Strategy 2: Strangle Sell</button>
+                        <button class="doc-tab-btn" onclick="switchDocTab(this, 'generalDoc')">Safety & Risk Limits</button>
+                    </div>
+                    
+                    <!-- Tab 1: Option Buying (BASE) -->
+                    <div class="doc-tab-content active" id="buyDoc">
+                        <div class="doc-rule-grid">
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--success);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    Setup & Gap Conditions
+                                </h4>
+                                <ul>
+                                    <li><strong>Gap Requirement:</strong> Opening gap must be greater than <span class="doc-badge badge-target">> 30 pts</span> (Gap Up) or less than <span class="doc-badge badge-sl">< -30 pts</span> (Gap Down).</li>
+                                    <li><strong>Directional Rule:</strong>
+                                        <br>• If Gap Up: Market open price must be <strong>above</strong> Pivot level (P).
+                                        <br>• If Gap Down: Market open price must be <strong>below</strong> Pivot level (P).
+                                    </li>
+                                    <li><strong>No Trade on Flat Opens:</strong> If opening gap is within ±30 points, Strategy 1 is completely skipped.</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--warning);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    Entry Trigger & Logic
+                                </h4>
+                                <ul>
+                                    <li><strong>Pivot Touch:</strong> Spot price must touch or cross the Pivot level (P) before <span class="doc-badge badge-eod">13:00</span> cutoff.</li>
+                                    <li><strong>P Tolerance:</strong> A margin of <span class="doc-badge badge-target">±10 points</span> around P counts as a valid touch.</li>
+                                    <li><strong>Delayed Entry:</strong> When touch is detected, it waits for the current 1-minute candle to close + 2 seconds buffer (e.g. entry at <code>candle_end + 2s</code>) to filter out fake breaks.</li>
+                                    <li><strong>Lots & Expiry:</strong> Buys <span class="doc-badge badge-strangle">2 Lots (130 shares)</span> of ATM Call (CE) for Gap Up or ATM Put (PE) for Gap Down.</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--danger);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+                                    Target, SL & Exit
+                                </h4>
+                                <ul>
+                                    <li><strong>CE Target:</strong> R1 Pivot level (Spot).</li>
+                                    <li><strong>CE Stop Loss:</strong> Pivot level (P) minus 20 points (<span class="doc-badge badge-sl">P - 20</span>).</li>
+                                    <li><strong>PE Target:</strong> S1 Pivot level (Spot).</li>
+                                    <li><strong>PE Stop Loss:</strong> Pivot level (P) plus 20 points (<span class="doc-badge badge-sl">P + 20</span>).</li>
+                                    <li><strong>EOD Force Exit:</strong> If target or SL is not hit by <span class="doc-badge badge-eod">15:20</span>, the strategy auto-exits at market premium.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab 2: Option Selling (Strangle) -->
+                    <div class="doc-tab-content" id="sellDoc">
+                        <div class="doc-rule-grid">
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--success);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    Setup & Gap Conditions
+                                </h4>
+                                <ul>
+                                    <li><strong>Any Gap Day:</strong> Requires opening gap greater than <span class="doc-badge badge-target">> 30 pts</span> (Gap Up) or less than <span class="doc-badge badge-sl">< -30 pts</span> (Gap Down).</li>
+                                    <li><strong>No Directional Bias:</strong> Runs same trade regardless of whether gap is up or down.</li>
+                                    <li><strong>No Pivot Touch Required:</strong> Operates entirely independently of the Pivot level (P) touch.</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--warning);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    Entry Trigger & Strikes
+                                </h4>
+                                <ul>
+                                    <li><strong>Immediate Entry:</strong> Automatically fires orders exactly at <span class="doc-badge badge-eod">09:16:02</span> on all valid gap days.</li>
+                                    <li><strong>Legs & Strikes:</strong> Shorts a symmetric <strong>ATM ± 100</strong> strangle:
+                                        <br>• Shorts 1 Lot (65 shares) of <strong>ATM + 100 CE</strong>.
+                                        <br>• Shorts 1 Lot (65 shares) of <strong>ATM - 100 PE</strong>.
+                                    </li>
+                                    <li><strong>Lots:</strong> 1 Lot each (Total margin blocked: ~₹70,000 - ₹80,000 depending on broker).</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--danger);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+                                    Target, SL & Exit
+                                </h4>
+                                <ul>
+                                    <li><strong>Combined SL Limit:</strong> Total M2M combined loss across CE and PE premium is capped at <span class="doc-badge badge-sl">₹7,000</span>.</li>
+                                    <li><strong>Live Monitoring:</strong> Evaluates combined P&L in real-time: <code>(ce_entry - ce_ltp + pe_entry - pe_ltp) * 65</code>.</li>
+                                    <li><strong>SL Trigger:</strong> If combined loss hits or exceeds -₹7,000, both legs are closed simultaneously at market.</li>
+                                    <li><strong>EOD Force Exit:</strong> If combined SL is not hit, the strangle is squared off at <span class="doc-badge badge-eod">15:20</span> to collect theta decay.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab 3: General Rules & Skipping -->
+                    <div class="doc-tab-content" id="generalDoc">
+                        <div class="doc-rule-grid">
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--primary);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                    Safety Rules
+                                </h4>
+                                <ul>
+                                    <li><strong>Thursday Expiry Skip:</strong> Both strategies are strictly disabled on Thursday to prevent 0DTE options decay and gamma risk.</li>
+                                    <li><strong>Max Daily Loss Limits:</strong> Buying is limited by P±20 spot SL. Selling is protected by the combined ₹7,000 SL.</li>
+                                    <li><strong>Execution Modes:</strong> Switch between Paper Trade (Simulated Orders) and Live Execution (Angel One via OpenAlgo) inside the config panel.</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="doc-rule-card">
+                                <h4 style="color: var(--secondary);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                    Backtest & Historical ROI
+                                </h4>
+                                <ul>
+                                    <li><strong>Option Buying (BASE):</strong> 1-year backtest profit of <span style="color: var(--success); font-weight: 600;">+₹1,11,787</span> (using 2-lot premium ROI of 721%).</li>
+                                    <li><strong>Option Selling (Strangle):</strong> 1-year backtest profit of <span style="color: var(--success); font-weight: 600;">+₹1,16,100</span> (approx. 145-193% on margin).</li>
+                                    <li><strong>Combined Profit:</strong> Net profit of <span style="color: var(--success); font-weight: 700;">+₹2,27,887</span> over 252 trading days in 2025-2026.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    
 
     <!-- Toast container -->
     <div class="toast-container" id="toastContainer"></div>
@@ -1990,7 +2102,7 @@
             const body = document.getElementById('logsTableBody');
             body.innerHTML = '';
             
-            const logs = (window.allLogs || []).slice(0, 5);
+            const logs = window.allLogs || [];
             
             // Calculate strategy-wise dynamic Net P&Ls and Capitals from ALL logged trades
             let buyNetPnl = 0.0;
@@ -2272,35 +2384,45 @@
         window.onload = init;
     </script>
 
-    <!-- Hidden Dummy Elements to prevent JS ReferenceErrors -->
+    <!-- Hidden Dummy Elements to prevent JS fetchStatus ReferenceErrors -->
     <div style="display: none;">
-        <span id="summaryBuyPnl"></span>
-        <span id="summarySellPnl"></span>
-        <span id="summaryTotalPnl"></span>
+        <span id="valS2"></span>
+        <span id="valS1"></span>
+        <span id="valP"></span>
+        <span id="valR1"></span>
+        <span id="valR2"></span>
+        <span id="pivotsDate"></span>
+        <span id="livePointer"></span>
+        <span id="pointerVal"></span>
         
-        <input type="text" id="OPENALGO_API_KEY">
-        <input type="number" id="LOT_SIZE">
-        <input type="number" id="GAP_THRESH">
-        <input type="number" id="P_TOL">
-        <input type="number" id="SL_PTS">
-        <input type="text" id="ENTRY_CUTOFF">
-        <input type="text" id="EOD_EXIT">
-        <input type="text" id="OPENALGO_HOST">
-        <select id="PAPER_TRADE">
-            <option value="true"></option>
-            <option value="false"></option>
-        </select>
+        <span id="buyStatusBadge"></span>
+        <span id="buyStatusText"></span>
+        <span id="buyStatusDesc"></span>
+        <span id="buyActiveSymbol"></span>
+        <span id="buyEntryDetails"></span>
+        <span id="buyTargetDetails"></span>
+        <span id="buySLDetails"></span>
+        <span id="buyDistanceIndicators"></span>
+        <span id="buyTargetFill"></span>
+        <span id="buyTargetDistText"></span>
+        <span id="buySLFill"></span>
+        <span id="buySLDistText"></span>
+        <span id="buyPnlText"></span>
+        <span id="buyCapitalText"></span>
+        <span id="buyReturnText"></span>
         
-        <button id="btnStart"></button>
-        <button id="btnStop"></button>
-        <div id="terminalLog"></div>
-        <div id="docPanelContent"></div>
-        <div id="docToggleArrow"></div>
-        
-        <!-- Filter buttons dummy to prevent click errors -->
-        <button id="filterBtnALL"></button>
-        <button id="filterBtnBUY"></button>
-        <button id="filterBtnSELL"></button>
+        <span id="sellStatusBadge"></span>
+        <span id="sellStatusText"></span>
+        <span id="sellStatusDesc"></span>
+        <span id="sellCeDetails"></span>
+        <span id="sellPeDetails"></span>
+        <span id="sellEntryTime"></span>
+        <span id="sellSlTrigger"></span>
+        <span id="sellSLProgressContainer"></span>
+        <span id="sellSLProgressFill"></span>
+        <span id="sellSLProgressText"></span>
+        <span id="sellPnlText"></span>
+        <span id="sellReturnText"></span>
     </div>
 
 </body>

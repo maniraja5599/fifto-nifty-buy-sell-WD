@@ -217,6 +217,18 @@ class DashboardRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(f"Error loading dashboard.html: {e}".encode())
             return
             
+        # Serve admin page
+        elif self.path == "/admin" or self.path == "/admin.html":
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            try:
+                with open(os.path.join(BASE_DIR, "admin.html"), "rb") as f:
+                    self.wfile.write(f.read())
+            except Exception as e:
+                self.wfile.write(f"Error loading admin.html: {e}".encode())
+            return
+            
         # GET /api/status
         elif self.path == "/api/status":
             self.send_response(200)
