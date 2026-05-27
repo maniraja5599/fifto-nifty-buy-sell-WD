@@ -1318,9 +1318,15 @@
                         </div>
                     </div>
                     
-                    <div class="strat-pnl-section">
-                        <span class="strat-pnl-label">Active Floating P&L (2-Lots)</span>
-                        <span class="strat-pnl-value" id="buyPnlText" style="color: var(--text-dark);">₹0.00</span>
+                    <div class="strat-pnl-section" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                            <span class="strat-pnl-label" id="buyPnlLabel">Active Floating P&L (3-Lots)</span>
+                            <span class="strat-pnl-value" id="buyPnlText" style="color: var(--text-dark); font-size: 20px;">₹0.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
+                            <span class="strat-pnl-label" id="buyCapitalText">Capital: ₹0</span>
+                            <span class="strat-pnl-value" id="buyReturnText" style="font-size: 14px; font-weight: 700; color: var(--text-muted);">0.00%</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -1365,9 +1371,15 @@
                         </div>
                     </div>
                     
-                    <div class="strat-pnl-section">
-                        <span class="strat-pnl-label">Active Floating P&L (1-Lot)</span>
-                        <span class="strat-pnl-value" id="sellPnlText" style="color: var(--text-dark);">₹0.00</span>
+                    <div class="strat-pnl-section" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                            <span class="strat-pnl-label">Active Floating P&L (1-Lot)</span>
+                            <span class="strat-pnl-value" id="sellPnlText" style="color: var(--text-dark); font-size: 20px;">₹0.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
+                            <span class="strat-pnl-label">Capital (Fixed): ₹2,50,000</span>
+                            <span class="strat-pnl-value" id="sellReturnText" style="font-size: 14px; font-weight: 700; color: var(--text-muted);">0.00%</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -1930,6 +1942,31 @@
                         buyStatusDesc.textContent = buyData.status_desc;
                     }
                     
+                    // Calculate dynamic Option Buying Capital & Return %
+                    let buyCapital = 0;
+                    let buyReturnPct = 0;
+                    if (buyData.symbol && buyData.entry_price) {
+                        const lotSize = buyData.lot_size ? parseInt(buyData.lot_size) : (data.lot_size ? data.lot_size * 3 : 195);
+                        buyCapital = buyData.entry_price * lotSize;
+                        if (buyCapital > 0) {
+                            buyReturnPct = (pnlRs / buyCapital) * 100;
+                        }
+                    }
+                    
+                    const buyCapitalText = document.getElementById('buyCapitalText');
+                    const buyReturnText = document.getElementById('buyReturnText');
+                    if (buyCapitalText && buyReturnText) {
+                        if (buyCapital > 0) {
+                            buyCapitalText.textContent = `Capital: ₹${buyCapital.toLocaleString('en-IN', {maximumFractionDigits: 0})}`;
+                            buyReturnText.textContent = `${buyReturnPct >= 0 ? '+' : ''}${buyReturnPct.toFixed(2)}%`;
+                            buyReturnText.style.color = buyReturnPct >= 0 ? 'var(--success)' : 'var(--danger)';
+                        } else {
+                            buyCapitalText.textContent = `Capital: ₹0`;
+                            buyReturnText.textContent = `0.00%`;
+                            buyReturnText.style.color = 'var(--text-muted)';
+                        }
+                    }
+                    
                     // Update metrics
                     if (buyData.in_trade || buyData.exit_price !== null) {
                         buyPnl.textContent = formattedPnl;
@@ -2031,6 +2068,15 @@
                         sellStatusBadge.className = `status-badge status-${sellData.status}`;
                         sellStatusText.textContent = sellData.status.replace('_', ' ');
                         sellStatusDesc.textContent = sellData.status_desc;
+                    }
+                    
+                    // Calculate Option Selling Return % based on fixed Capital of 2.5 Lakhs
+                    const sellCapital = 250000;
+                    const sellReturnPct = (pnlRs / sellCapital) * 100;
+                    const sellReturnText = document.getElementById('sellReturnText');
+                    if (sellReturnText) {
+                        sellReturnText.textContent = `${sellReturnPct >= 0 ? '+' : ''}${sellReturnPct.toFixed(2)}%`;
+                        sellReturnText.style.color = sellReturnPct >= 0 ? 'var(--success)' : 'var(--danger)';
                     }
                     
                     // Update metrics
@@ -2241,9 +2287,11 @@
             
             const logs = window.allLogs || [];
             
-            // Calculate strategy-wise dynamic Net P&Ls from ALL logged trades
+            // Calculate strategy-wise dynamic Net P&Ls and Capitals from ALL logged trades
             let buyNetPnl = 0.0;
             let sellNetPnl = 0.0;
+            let totalBuyCapital = 0.0;
+            let buyTradesCount = 0;
             
             logs.forEach(row => {
                 const pnl = parseFloat(row.pnl_rs) || 0.0;
@@ -2251,24 +2299,40 @@
                     sellNetPnl += pnl;
                 } else {
                     buyNetPnl += pnl;
+                    const entryPrice = parseFloat(row.entry_price) || 0.0;
+                    const lotSize = parseFloat(row.lot_size) || 195.0;
+                    const tradeCapital = entryPrice * lotSize;
+                    if (tradeCapital > 0) {
+                        totalBuyCapital += tradeCapital;
+                        buyTradesCount++;
+                    }
                 }
             });
             
             const totalNetPnl = buyNetPnl + sellNetPnl;
+            const avgBuyCapital = buyTradesCount > 0 ? (totalBuyCapital / buyTradesCount) : 0.0;
+            
+            const buyReturnPct = avgBuyCapital > 0 ? (buyNetPnl / avgBuyCapital) * 100 : 0.0;
+            const sellReturnPct = (sellNetPnl / 250000.0) * 100;
+            const overallCapital = 250000.0 + avgBuyCapital;
+            const overallReturnPct = overallCapital > 0 ? (totalNetPnl / overallCapital) * 100 : 0.0;
             
             // Helper to format values
-            const formatSummaryPnl = (val, elId) => {
+            const formatSummaryPnl = (val, returnPct, elId) => {
                 const el = document.getElementById(elId);
                 if (!el) return;
                 const sign = val >= 0 ? '+' : '';
-                el.textContent = `${sign}₹${val.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+                const displayVal = `${sign}₹${val.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+                const displayPct = ` (${sign}${returnPct.toFixed(2)}% ROI)`;
+                
+                el.innerHTML = `${displayVal}<span style="font-size: 11px; font-weight: 600; opacity: 0.85; margin-left: 6px;">${displayPct}</span>`;
                 el.style.color = val >= 0 ? 'var(--success)' : 'var(--danger)';
                 el.style.textShadow = val >= 0 ? '0 0 10px rgba(16, 185, 129, 0.2)' : '0 0 10px rgba(239, 68, 68, 0.2)';
             };
             
-            formatSummaryPnl(buyNetPnl, 'summaryBuyPnl');
-            formatSummaryPnl(sellNetPnl, 'summarySellPnl');
-            formatSummaryPnl(totalNetPnl, 'summaryTotalPnl');
+            formatSummaryPnl(buyNetPnl, buyReturnPct, 'summaryBuyPnl');
+            formatSummaryPnl(sellNetPnl, sellReturnPct, 'summarySellPnl');
+            formatSummaryPnl(totalNetPnl, overallReturnPct, 'summaryTotalPnl');
             
             // Filter logs based on selection
             const filteredLogs = logs.filter(row => {
@@ -2295,7 +2359,23 @@
                 const pnlPts = parseFloat(row.pnl_pts);
                 
                 const pnlClass = pnlVal >= 0 ? 'pnl-gain' : 'pnl-loss';
+                const pnlClassVal = pnlVal >= 0 ? 'pnl-gain' : 'pnl-loss';
                 const pnlSign = pnlVal >= 0 ? '+' : '';
+                
+                // Calculate capital and ROI %
+                let tradeCapital = 0;
+                let tradeReturnPct = 0;
+                if (row.opt_type === 'STRANGLE') {
+                    tradeCapital = 250000;
+                    tradeReturnPct = (pnlVal / tradeCapital) * 100;
+                } else {
+                    const entryPrice = parseFloat(row.entry_price) || 0;
+                    const lotSizeVal = parseFloat(row.lot_size) || 195;
+                    tradeCapital = entryPrice * lotSizeVal;
+                    if (tradeCapital > 0) {
+                        tradeReturnPct = (pnlVal / tradeCapital) * 100;
+                    }
+                }
                 
                 let badgeClass = 'badge-eod';
                 if (row.result === 'TARGET' || row.result === 'TGT') badgeClass = 'badge-target';
@@ -2333,6 +2413,9 @@
                 const remarkVal = row.remark || '-';
                 
                 const lotSize = row.lot_size ? parseInt(row.lot_size) : '-';
+                
+                const displayCapital = tradeCapital >= 100000 ? `₹${(tradeCapital/100000).toFixed(2)}L` : `₹${tradeCapital.toLocaleString('en-IN', {maximumFractionDigits: 0})}`;
+                
                 tr.innerHTML = `
                     <td data-label="Date" style="font-weight: 500; font-family: var(--font-mono);">${dateFormatted}</td>
                     <td data-label="Symbol" style="font-weight: 600; font-size: 11px;">
@@ -2343,7 +2426,12 @@
                         <div style="font-weight:500;">Entry: ${row.entry_time}</div>
                     </td>
                     <td data-label="Lot Size" style="font-family: var(--font-mono); font-weight: 600; color: var(--secondary);">${lotSize}</td>
-                    <td data-label="Entry Option" style="font-family: var(--font-mono);">₹${parseFloat(row.entry_price).toFixed(2)}</td>
+                    <td data-label="Entry Option" style="font-family: var(--font-mono);">
+                        ₹${parseFloat(row.entry_price).toFixed(2)}
+                        <div style="font-size: 9px; color: var(--text-muted); font-weight: 500;">
+                            Cap: ${displayCapital}
+                        </div>
+                    </td>
                     <td data-label="Exit Time" style="font-family: var(--font-mono);">${displayExitTime}</td>
                     <td data-label="Exit Price" style="font-family: var(--font-mono);">${displayExitPrice}</td>
                     <td data-label="Result">${displayResult}</td>
@@ -2354,10 +2442,10 @@
                         <div style="font-size:10px; color:var(--text-muted); font-family: var(--font-mono);">Tgt: ${tgtVal}</div>
                     </td>
                     <td data-label="Net P&L Return">
-                        <span class="pnl-tag ${pnlClass}" style="${row.exit_time === 'ACTIVE' ? 'animation: pulse-breathe 2s infinite;' : ''}">
+                        <span class="pnl-tag ${pnlClassVal}" style="${row.exit_time === 'ACTIVE' ? 'animation: pulse-breathe 2s infinite;' : ''}">
                             ${pnlSign}₹${pnlVal.toLocaleString('en-IN', {minimumFractionDigits: 2})}
-                            <div style="font-size: 9px; font-weight: 500; text-align: right; opacity: 0.8;">
-                                ${pnlSign}${pnlPts.toFixed(2)} pts
+                            <div style="font-size: 9px; font-weight: 600; text-align: right; opacity: 0.95;">
+                                ${pnlSign}${tradeReturnPct.toFixed(2)}% (${pnlSign}${pnlPts.toFixed(2)} pts)
                             </div>
                         </span>
                     </td>
