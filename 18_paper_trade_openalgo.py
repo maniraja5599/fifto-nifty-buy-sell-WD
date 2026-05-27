@@ -860,12 +860,15 @@ while True:
     live_spot = get_live_nifty()
     if live_spot is None:
         log("WARN: Spot price fetch failed. Retrying in loop...")
-        time.sleep(2)
+        if "09:15:30" <= current_time_str <= "09:16:20":
+            time.sleep(0.3) # Fast retry near market open/strangle entry
+        else:
+            time.sleep(2)
         continue
         
-    # ── 1. STRANGLE ENTRY EXECUTION (09:16:02) ──
+    # ── 1. STRANGLE ENTRY EXECUTION (09:16:00) ──
     if not strangle_entered and not strangle_active:
-        if time_ge(current_time_str, "09:16:02"):
+        if time_ge(current_time_str, "09:16:00"):
             log("Executing Strategy 2: Short Strangle...")
             spot_at_0916 = live_spot
             strangle_ce_strike = int(round(spot_at_0916 / 50) * 50) + 100
@@ -1121,12 +1124,12 @@ while True:
         break
         
     # Dynamic loop sleep:
-    # 1. Near Strategy 2 entry time (09:16:02), run loop every 0.5s to ensure execution within 1-2s.
+    # 1. Near Strategy 2 entry time (09:16:00), run loop every 0.5s to ensure execution within 1s.
     # 2. When positions are active, monitor every 2s for precise high-frequency stop loss exits.
     # 3. Idle monitoring runs at the configured POLL_EXIT_SEC (15s) to conserve API limits.
     current_time_str = now_time()
     sleep_time = POLL_EXIT_SEC
-    if not strangle_entered and "09:15:30" <= current_time_str <= "09:16:05":
+    if not strangle_entered and "09:15:30" <= current_time_str <= "09:16:20":
         sleep_time = 0.5
     elif base_active or strangle_active:
         sleep_time = 2.0
