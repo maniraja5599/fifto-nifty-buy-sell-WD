@@ -64,7 +64,7 @@ def download_nifty_spot():
             return False
             
         # Group by date and save to individual files
-        base_dir = r"C:\Users\manir\.gemini\antigravity\scratch\fifto-nifty-pivot-gap\data"
+        base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
         os.makedirs(base_dir, exist_ok=True)
         
         unique_dates = df['date_str'].unique()
