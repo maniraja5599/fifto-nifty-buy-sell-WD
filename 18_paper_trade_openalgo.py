@@ -532,18 +532,44 @@ if gap_days > 4:
 
 log(f"Loading pivots from {prev_date}...")
 
-prev_df = load_spot_data(prev_date, "NIFTY")
-if prev_df is None or prev_df.empty:
-    log(f"ERROR: No historical data for {prev_date}")
-    update_live_status("ERROR", f"ERROR: No historical data for {prev_date}")
-    sys.exit(1)
+# 1. Try to fetch the official High, Low, and Close from Yahoo Finance daily history
+H, L, C = None, None, None
+try:
+    log(f"Fetching official exchange-settled daily OHLC for {prev_date} from Yahoo Finance...")
+    import yfinance as yf
+    formatted_prev_date = f"{prev_date[:4]}-{prev_date[4:6]}-{prev_date[6:]}"
+    start_date = pd.Timestamp(formatted_prev_date)
+    end_date = start_date + pd.Timedelta(days=1)
+    ticker = yf.Ticker('^NSEI')
+    hist = ticker.history(start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
+    if not hist.empty:
+        row = hist.iloc[0]
+        H = round(float(row['High']), 2)
+        L = round(float(row['Low']), 2)
+        C = round(float(row['Close']), 2)
+        log(f"Official OHLC successfully loaded: High={H}, Low={L}, Close={C}")
+except Exception as e:
+    log(f"WARN: Failed to fetch official OHLC from yfinance: {e}. Falling back to 1-min data.")
 
-prev_tr    = prev_df[(prev_df['time'] >= '09:15:00') & (prev_df['time'] <= '15:30:00')]
-H = prev_tr['price'].max(); L = prev_tr['price'].min(); C = prev_tr['price'].iloc[-1]
+# 2. Fallback to 1-minute CSV data if Yahoo Finance daily history fetch failed
+if H is None or L is None or C is None:
+    prev_df = load_spot_data(prev_date, "NIFTY")
+    if prev_df is None or prev_df.empty:
+        log(f"ERROR: No historical data for {prev_date}")
+        update_live_status("ERROR", f"ERROR: No historical data for {prev_date}")
+        sys.exit(1)
+
+    prev_tr = prev_df[(prev_df['time'] >= '09:15:00') & (prev_df['time'] <= '15:30:00')]
+    H = prev_tr['price'].max()
+    L = prev_tr['price'].min()
+    C = prev_tr['price'].iloc[-1]
+    log(f"Using fallback 1-min CSV OHLC: High={H}, Low={L}, Close={C}")
+
 P  = round((H+L+C)/3, 2)
 R1 = round(2*P-L, 2);  S1 = round(2*P-H, 2)
 R2 = round(P+(H-L), 2); S2 = round(P-(H-L), 2)
 prev_close = round(C, 2)
+
 
 print(f"\n  Pivot Levels (from {prev_date}):")
 print(f"    R2 = {R2}")
