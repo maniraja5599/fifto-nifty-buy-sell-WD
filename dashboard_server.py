@@ -6,7 +6,9 @@ import sys
 import subprocess
 import signal
 import csv
-from datetime import datetime
+import time
+import threading
+from datetime import datetime, date
 
 PORT = 8080
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -127,7 +129,52 @@ def stop_scanner():
         write_offline_status()
         return False, f"Error stopping scanner: {e}"
 
+def scanner_monitor_thread():
+    print("[MONITOR] Scanner background monitor thread started.")
+    while True:
+        try:
+            time.sleep(10)
+            
+            # 1. Determine if backend process is actually running
+            global active_process
+            is_running = False
+            if active_process is not None and active_process.poll() is None:
+                is_running = True
+                
+            if is_running:
+                continue
+                
+            # 2. Check if we should auto-start
+            now = datetime.now()
+            # Only auto-start on weekdays (Mon-Fri)
+            if now.weekday() >= 5: # Saturday = 5, Sunday = 6
+                continue
+                
+            # Only auto-start during trading hours (08:50 AM to 03:20 PM IST)
+            current_hm = now.strftime("%H:%M")
+            if not ("08:50" <= current_hm <= "15:20"):
+                continue
+                
+            # Check if scanner has already run today
+            status_data = None
+            if os.path.exists(STATUS_FILE):
+                try:
+                    with open(STATUS_FILE, "r") as f:
+                        status_data = json.load(f)
+                except:
+                    pass
+                    
+            today_str = now.strftime("%Y%m%d")
+            last_run_date = status_data.get("date") if status_data else None
+            
+            if last_run_date != today_str:
+                print(f"[MONITOR] Auto-starting scanner for trading date {today_str} at {now.strftime('%H:%M:%S')}...")
+                start_scanner()
+        except Exception as e:
+            print(f"[MONITOR] Error in monitor thread: {e}")
+
 def write_offline_status():
+
     try:
         # Update live_status.json to offline state
         status_data = {}
@@ -458,6 +505,10 @@ def run():
 
     # Auto-start scanner by default on server boot
     success, msg = start_scanner()
+    
+    # Start background process monitor thread for robust 24/7 auto-start
+    monitor = threading.Thread(target=scanner_monitor_thread, daemon=True)
+    monitor.start()
     
     server = ThreadingHTTPServer(('0.0.0.0', PORT), DashboardRequestHandler)
     print(f"\n========================================================")

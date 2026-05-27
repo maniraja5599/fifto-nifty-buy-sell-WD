@@ -7,7 +7,7 @@
     
     <!-- PWA Metadata -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#8b5cf6">
+    <meta name="theme-color" content="#00e676">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/fifto_logo.png">
@@ -23,33 +23,33 @@
     <!-- Premium CSS Styles -->
     <style>
         :root {
-            --bg-color: #060814;
-            --panel-bg: rgba(255, 255, 255, 0.03);
-            --panel-border: rgba(255, 255, 255, 0.05);
-            --panel-hover: rgba(255, 255, 255, 0.06);
+            --bg-color: #080c0e;
+            --panel-bg: rgba(255, 255, 255, 0.025);
+            --panel-border: rgba(0, 230, 118, 0.08);
+            --panel-hover: rgba(0, 230, 118, 0.04);
             
-            --primary: #8b5cf6;
-            --primary-glow: rgba(139, 92, 246, 0.3);
-            --secondary: #06b6d4;
-            --secondary-glow: rgba(6, 182, 212, 0.3);
+            --primary: #00e676;
+            --primary-glow: rgba(0, 230, 118, 0.25);
+            --secondary: #00b0ff;
+            --secondary-glow: rgba(0, 176, 255, 0.25);
             
-            --success: #10b981;
-            --success-glow: rgba(16, 185, 129, 0.25);
-            --danger: #ef4444;
-            --danger-glow: rgba(239, 68, 68, 0.25);
-            --warning: #f59e0b;
-            --warning-glow: rgba(245, 158, 11, 0.25);
+            --success: #00e676;
+            --success-glow: rgba(0, 230, 118, 0.2);
+            --danger: #ff1744;
+            --danger-glow: rgba(255, 23, 68, 0.2);
+            --warning: #ffab00;
+            --warning-glow: rgba(255, 171, 0, 0.2);
             
-            --text-main: #f3f4f6;
-            --text-muted: #a1a1aa;
-            --text-dark: #71717a;
+            --text-main: #ecf0f1;
+            --text-muted: #95a5a6;
+            --text-dark: #546e7a;
             
             --font-display: 'Outfit', sans-serif;
             --font-body: 'Inter', sans-serif;
             --font-mono: 'Fira Code', monospace;
             
-            --card-radius: 20px;
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --card-radius: 14px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
@@ -66,10 +66,10 @@
             min-height: 100vh;
             overflow-x: hidden;
             background-image: 
-                radial-gradient(circle at 5% 10%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
-                radial-gradient(circle at 95% 90%, rgba(6, 182, 212, 0.1) 0%, transparent 40%);
+                radial-gradient(circle at 5% 5%, rgba(0, 230, 118, 0.07) 0%, transparent 45%),
+                radial-gradient(circle at 95% 95%, rgba(255, 23, 68, 0.06) 0%, transparent 45%);
             background-attachment: fixed;
-            padding: 24px 24px 40px 24px;
+            padding: 16px 20px 32px 20px;
         }
 
         /* Scrollbars */
@@ -94,7 +94,7 @@
             margin: 0 auto;
             display: grid;
             grid-template-columns: 1fr;
-            gap: 24px;
+            gap: 14px;
         }
 
         /* Glassmorphism Card Style */
@@ -104,16 +104,15 @@
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--panel-border);
             border-radius: var(--card-radius);
-            padding: 24px;
+            padding: 16px 18px;
             transition: var(--transition);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.5);
         }
 
         .card:hover {
-            border-color: rgba(255, 255, 255, 0.08);
+            border-color: rgba(0, 230, 118, 0.15);
             background: var(--panel-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 6px 30px -8px rgba(0, 0, 0, 0.6);
         }
 
         /* Header Style */
@@ -133,28 +132,28 @@
         }
 
         .logo-img {
-            width: 46px;
-            height: 46px;
-            border-radius: 12px;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
             border: 2px solid var(--primary);
-            box-shadow: 0 0 15px var(--primary-glow);
+            box-shadow: 0 0 12px var(--primary-glow);
             object-fit: cover;
         }
 
         .logo-section h1 {
             font-family: var(--font-display);
-            font-size: 26px;
+            font-size: 20px;
             font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #c084fc 0%, #22d3ee 100%);
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #00e676 0%, #00b0ff 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         .logo-section p {
-            color: var(--text-muted);
-            font-size: 13px;
-            margin-top: 2px;
+            color: var(--text-dark);
+            font-size: 11px;
+            margin-top: 1px;
         }
 
         .header-controls {
@@ -192,8 +191,8 @@
         .status-SCANNING { color: var(--secondary); border-color: var(--secondary-glow); }
         .status-SCANNING .status-dot { background-color: var(--secondary); box-shadow: 0 0 10px var(--secondary); animation: pulse-breathe 2s infinite; }
         
-        .status-IN_TRADE { color: var(--primary); border-color: var(--primary-glow); }
-        .status-IN_TRADE .status-dot { background-color: var(--primary); box-shadow: 0 0 10px var(--primary); animation: pulse-breathe 1s infinite; }
+        .status-IN_TRADE { color: var(--success); border-color: var(--success-glow); }
+        .status-IN_TRADE .status-dot { background-color: var(--success); box-shadow: 0 0 10px var(--success); animation: pulse-breathe 1s infinite; }
         
         .status-CLOSED { color: var(--text-muted); border-color: var(--panel-border); }
         .status-CLOSED .status-dot { background-color: var(--text-muted); }
@@ -228,24 +227,24 @@
         /* Top Metrics Row */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
         }
 
         .metric-card {
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 120px;
+            min-height: 95px;
             position: relative;
             overflow: hidden;
-            border-left: 4px solid var(--panel-border);
+            border-left: 3px solid var(--panel-border);
         }
 
-        .metric-card.spot { border-left-color: var(--secondary); background: linear-gradient(90deg, rgba(6, 182, 212, 0.02) 0%, transparent 100%); }
-        .metric-card.pnl-buy { border-left-color: var(--success); background: linear-gradient(90deg, rgba(16, 185, 129, 0.02) 0%, transparent 100%); }
-        .metric-card.pnl-sell { border-left-color: var(--primary); background: linear-gradient(90deg, rgba(139, 92, 246, 0.02) 0%, transparent 100%); }
-        .metric-card.gap { border-left-color: var(--warning); background: linear-gradient(90deg, rgba(245, 158, 11, 0.02) 0%, transparent 100%); }
+        .metric-card.spot { border-left-color: var(--secondary); background: linear-gradient(90deg, rgba(0, 176, 255, 0.04) 0%, transparent 100%); }
+        .metric-card.pnl-buy { border-left-color: var(--success); background: linear-gradient(90deg, rgba(0, 230, 118, 0.04) 0%, transparent 100%); }
+        .metric-card.pnl-sell { border-left-color: var(--danger); background: linear-gradient(90deg, rgba(255, 23, 68, 0.04) 0%, transparent 100%); }
+        .metric-card.gap { border-left-color: var(--warning); background: linear-gradient(90deg, rgba(255, 171, 0, 0.04) 0%, transparent 100%); }
 
         .metric-label {
             font-size: 11px;
@@ -257,9 +256,9 @@
 
         .metric-value {
             font-family: var(--font-display);
-            font-size: 32px;
+            font-size: 26px;
             font-weight: 700;
-            margin: 8px 0;
+            margin: 5px 0;
             letter-spacing: -0.5px;
         }
 
@@ -274,22 +273,22 @@
         /* Dual-Strategy Telemetry Layout */
         .strategy-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 12px;
         }
         
         .strategy-card {
-            border-top: 4px solid var(--panel-border);
+            border-top: 3px solid var(--panel-border);
         }
         
         .strategy-card.buying {
             border-top-color: var(--success);
-            background: linear-gradient(180deg, rgba(16, 185, 129, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
+            background: linear-gradient(180deg, rgba(0, 230, 118, 0.03) 0%, rgba(0, 0, 0, 0) 100%);
         }
         
         .strategy-card.selling {
-            border-top-color: var(--primary);
-            background: linear-gradient(180deg, rgba(139, 92, 246, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
+            border-top-color: var(--danger);
+            background: linear-gradient(180deg, rgba(255, 23, 68, 0.03) 0%, rgba(0, 0, 0, 0) 100%);
         }
         
         .strat-header {
@@ -366,7 +365,7 @@
         
         .strat-pnl-value {
             font-family: var(--font-display);
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 800;
         }
         
@@ -458,9 +457,9 @@
             transform: scale(1.4);
         }
 
-        .pivot-marker.p-node .pivot-node { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
-        .pivot-marker.r-node .pivot-node { background: var(--secondary); }
-        .pivot-marker.s-node .pivot-node { background: var(--warning); }
+        .pivot-marker.p-node .pivot-node { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+        .pivot-marker.r-node .pivot-node { background: var(--success); }
+        .pivot-marker.s-node .pivot-node { background: var(--danger); }
 
         .pivot-label {
             position: absolute;
@@ -497,8 +496,8 @@
             height: 12px;
             background: #ffffff;
             border-radius: 50%;
-            box-shadow: 0 0 15px #ffffff, 0 0 5px var(--primary);
-            border: 2px solid var(--primary);
+            box-shadow: 0 0 15px #ffffff, 0 0 5px var(--success);
+            border: 2px solid var(--success);
         }
 
         .pointer-label {
@@ -604,14 +603,14 @@
         input:focus, select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+            box-shadow: 0 0 8px rgba(0, 230, 118, 0.15);
         }
 
         /* Retro Terminal Widget */
         .terminal-card {
             display: flex;
             flex-direction: column;
-            height: 380px;
+            height: 340px;
         }
 
         .terminal-header {
@@ -698,12 +697,12 @@
 
         .pnl-gain {
             color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
+            background: rgba(0, 230, 118, 0.1);
         }
 
         .pnl-loss {
             color: var(--danger);
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(255, 23, 68, 0.1);
         }
 
         .badge {
@@ -715,10 +714,10 @@
             display: inline-block;
         }
         
-        .badge-target { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.15); }
-        .badge-sl { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.15); }
-        .badge-eod { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.15); }
-        .badge-strangle { background: rgba(139, 92, 246, 0.1); color: var(--primary); border: 1px solid rgba(139, 92, 246, 0.15); }
+        .badge-target { background: rgba(0, 230, 118, 0.1); color: var(--success); border: 1px solid rgba(0, 230, 118, 0.2); }
+        .badge-sl { background: rgba(255, 23, 68, 0.1); color: var(--danger); border: 1px solid rgba(255, 23, 68, 0.2); }
+        .badge-eod { background: rgba(255, 171, 0, 0.1); color: var(--warning); border: 1px solid rgba(255, 171, 0, 0.2); }
+        .badge-strangle { background: rgba(0, 176, 255, 0.1); color: var(--secondary); border: 1px solid rgba(0, 176, 255, 0.2); }
 
         /* Animations */
         @keyframes pulse-breathe {
@@ -728,7 +727,7 @@
 
         @keyframes text-glow {
             0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.1)); }
-            50% { filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4)); }
+            50% { filter: drop-shadow(0 0 8px rgba(0, 230, 118, 0.4)); }
         }
 
         /* Toast Notifications */
@@ -761,9 +760,9 @@
             transform: translateX(0);
         }
 
-        .toast.success { border-left: 4px solid var(--success); }
-        .toast.error { border-left: 4px solid var(--danger); }
-        .toast.info { border-left: 4px solid var(--secondary); }
+        .toast.success { border-left: 3px solid var(--success); }
+        .toast.error { border-left: 3px solid var(--danger); }
+        .toast.info { border-left: 3px solid var(--secondary); }
 
         .toast-message {
             font-size: 13px;
@@ -772,9 +771,9 @@
 
         /* Documentation Panel Styling */
         .doc-card {
-            margin-top: 8px;
-            border-left: 4px solid var(--secondary);
-            background: linear-gradient(180deg, rgba(6, 182, 212, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
+            margin-top: 0;
+            border-left: 3px solid var(--primary);
+            background: linear-gradient(180deg, rgba(0, 230, 118, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
         }
 
         .doc-header {
@@ -845,8 +844,8 @@
         }
 
         .doc-tab-btn.active {
-            color: var(--secondary);
-            border-bottom-color: var(--secondary);
+            color: var(--primary);
+            border-bottom-color: var(--primary);
         }
 
         .doc-tab-content {
@@ -955,32 +954,32 @@
         }
 
         .nav-item.active {
-            color: var(--primary);
+            color: var(--success);
         }
 
         .nav-item.active svg {
             transform: translateY(-2px);
             opacity: 1;
-            stroke: var(--primary);
-            filter: drop-shadow(0 0 5px var(--primary-glow));
+            stroke: var(--success);
+            filter: drop-shadow(0 0 5px var(--success-glow));
         }
 
         /* Filters and summary grid styling */
         .filter-btn.active {
             border-color: var(--primary) !important;
-            background: var(--primary-glow) !important;
-            color: var(--text-main) !important;
-            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+            background: rgba(0, 230, 118, 0.08) !important;
+            color: var(--primary) !important;
+            box-shadow: 0 0 8px rgba(0, 230, 118, 0.15);
         }
 
         /* Mobile Layout Modifications */
         @media (max-width: 768px) {
             body {
-                padding: 16px 16px 88px 16px;
+                padding: 12px 12px 80px 12px;
             }
 
             .container {
-                gap: 16px;
+                gap: 10px;
             }
 
             header {
@@ -1076,16 +1075,16 @@
             }
             
             tr {
-                background: rgba(255, 255, 255, 0.015) !important;
+                background: rgba(0, 0, 0, 0.2) !important;
                 border: 1px solid var(--panel-border) !important;
-                border-radius: 14px;
-                margin-bottom: 12px;
-                padding: 14px;
-                border-left: 4px solid var(--panel-border) !important;
+                border-radius: 10px;
+                margin-bottom: 8px;
+                padding: 10px;
+                border-left: 3px solid var(--panel-border) !important;
             }
 
             tr[style*="border-left"] {
-                border-left: 4px solid var(--primary) !important; /* Retain active row indicator */
+                border-left: 3px solid var(--success) !important; /* Retain active row indicator */
             }
             
             td {
@@ -1155,7 +1154,7 @@
                 <img src="/fifto_logo.png" alt="Fifto Logo" class="logo-img">
                 <div>
                     <h1>FIFTO APP</h1>
-                    <p>Dynamic Dual Strategy Auto Execution Shell</p>
+                    <p>NIFTY Pivot Gap · Dual Strategy Engine</p>
                 </div>
             </div>
             <div class="header-controls">
@@ -1182,7 +1181,7 @@
         <div id="screen-dashboard" class="app-screen active">
             
             <!-- Top Metrics Row -->
-            <div class="metrics-grid" style="margin-bottom: 24px;">
+            <div class="metrics-grid" style="margin-bottom: 14px;">
                 <!-- Spot Card -->
                 <div class="card metric-card spot">
                     <div class="metric-label">NIFTY 50 Spot</div>
@@ -1328,8 +1327,8 @@
                 <!-- Strategy 2: Option Selling (Strangle) -->
                 <div class="card strategy-card selling">
                     <div class="strat-header">
-                        <span class="strat-title" style="color: var(--primary);">
-                            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color: var(--primary); box-shadow: 0 0 8px var(--primary);"></span>
+                        <span class="strat-title" style="color: var(--danger);">
+                            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color: var(--danger); box-shadow: 0 0 8px var(--danger);"></span>
                             Strategy 2: Short Strangle (ATM±100)
                         </span>
                         <div class="status-badge status-OFFLINE" id="sellStatusBadge" style="padding:4px 8px; font-size:9px;">
@@ -1361,7 +1360,7 @@
                     <!-- Dynamic Strangle SL Progress Bar -->
                     <div id="sellSLProgressContainer" style="display: none; margin-top: 12px;">
                         <div class="distance-bar-container" style="height:26px;">
-                            <div class="distance-bar-fill" id="sellSLProgressFill" style="background-color: var(--primary); width: 0%;"></div>
+                            <div class="distance-bar-fill" id="sellSLProgressFill" style="background-color: var(--danger); width: 0%;"></div>
                             <span class="distance-bar-text" id="sellSLProgressText" style="font-size:9.5px;">Combined Loss: --</span>
                         </div>
                     </div>
