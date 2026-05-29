@@ -523,35 +523,61 @@ if not past_dates:
     sys.exit(1)
 
 prev_date = past_dates[-1]
-prev_dt = pd.Timestamp(prev_date)
-gap_days = (today_dt - prev_dt).days
-if gap_days > 4:
-    warn_msg = f"⚠️ <b>WARNING: Pivot Source Date is {gap_days} days old!</b>\n• Pivot calculated from: <code>{prev_date}</code>\n• Today's Date: <code>{today_str}</code>\n\nPlease double check if yesterday was a holiday or if data is missing!"
-    log(f"WARN: Pivot source date {prev_date} is {gap_days} days old!")
-    send_telegram_message(warn_msg)
 
-log(f"Loading pivots from {prev_date}...")
-
-# 1. Try to fetch the official High, Low, and Close from Yahoo Finance daily history
-H, L, C = None, None, None
+# ── Dynamic Verification from Yahoo Finance ──
+y_prev_date = None
+y_H, y_L, y_C = None, None, None
 try:
-    log(f"Fetching official exchange-settled daily OHLC for {prev_date} from Yahoo Finance...")
+    log("Dynamically fetching latest trading days from Yahoo Finance to verify previous date & OHLC...")
     import yfinance as yf
-    formatted_prev_date = f"{prev_date[:4]}-{prev_date[4:6]}-{prev_date[6:]}"
-    start_date = pd.Timestamp(formatted_prev_date)
-    end_date = start_date + pd.Timedelta(days=1)
     ticker = yf.Ticker('^NSEI')
-    hist = ticker.history(start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
+    hist = ticker.history(period="7d")
     if not hist.empty:
-        row = hist.iloc[0]
-        H = round(float(row['High']), 2)
-        L = round(float(row['Low']), 2)
-        C = round(float(row['Close']), 2)
-        log(f"Official OHLC successfully loaded: High={H}, Low={L}, Close={C}")
+        # Filter out today's row if it exists (so we only get fully completed trading days)
+        completed_days = hist[hist.index.date < date.today()]
+        if not completed_days.empty:
+            last_row = completed_days.iloc[-1]
+            last_date_dt = completed_days.index[-1]
+            y_prev_date = last_date_dt.strftime("%Y%m%d")
+            y_H = round(float(last_row['High']), 2)
+            y_L = round(float(last_row['Low']), 2)
+            y_C = round(float(last_row['Close']), 2)
+            log(f"Yahoo Finance resolved latest trading day: {y_prev_date} | High={y_H}, Low={y_L}, Close={y_C}")
 except Exception as e:
-    log(f"WARN: Failed to fetch official OHLC from yfinance: {e}. Falling back to 1-min data.")
+    log(f"WARN: Failed to resolve previous date/OHLC dynamically from yfinance: {e}")
 
-# 2. Fallback to 1-minute CSV data if Yahoo Finance daily history fetch failed
+# Compare and Self-Heal
+H, L, C = None, None, None
+if y_prev_date:
+    if prev_date != y_prev_date:
+        log(f"⚠️ [SELF-HEALING] Local database previous date ({prev_date}) does not match Yahoo Finance resolved date ({y_prev_date})!")
+        log(f"Updating previous date from {prev_date} to {y_prev_date} using online yfinance values.")
+        prev_date = y_prev_date
+    H, L, C = y_H, y_L, y_C
+    log(f"Using Yahoo Finance online OHLC: High={H}, Low={L}, Close={C}")
+else:
+    log("Could not fetch online daily data. Using local database as fallback...")
+
+# ── Fallback 1: Yahoo Finance individual date fetch (if period="7d" was incomplete) ──
+if H is None or L is None or C is None:
+    try:
+        log(f"Fetching official exchange-settled daily OHLC for {prev_date} from Yahoo Finance...")
+        import yfinance as yf
+        formatted_prev_date = f"{prev_date[:4]}-{prev_date[4:6]}-{prev_date[6:]}"
+        start_date = pd.Timestamp(formatted_prev_date)
+        end_date = start_date + pd.Timedelta(days=1)
+        ticker = yf.Ticker('^NSEI')
+        hist = ticker.history(start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
+        if not hist.empty:
+            row = hist.iloc[0]
+            H = round(float(row['High']), 2)
+            L = round(float(row['Low']), 2)
+            C = round(float(row['Close']), 2)
+            log(f"Official OHLC successfully loaded: High={H}, Low={L}, Close={C}")
+    except Exception as e:
+        log(f"WARN: Failed to fetch official OHLC from yfinance: {e}. Falling back to 1-min data.")
+
+# ── Fallback 2: 1-minute CSV data ──
 if H is None or L is None or C is None:
     prev_df = load_spot_data(prev_date, "NIFTY")
     if prev_df is None or prev_df.empty:
@@ -565,10 +591,27 @@ if H is None or L is None or C is None:
     C = prev_tr['price'].iloc[-1]
     log(f"Using fallback 1-min CSV OHLC: High={H}, Low={L}, Close={C}")
 
+# Pivot Calculation
 P  = round((H+L+C)/3, 2)
 R1 = round(2*P-L, 2);  S1 = round(2*P-H, 2)
 R2 = round(P+(H-L), 2); S2 = round(P-(H-L), 2)
 prev_close = round(C, 2)
+
+# Validate prev_close with OpenAlgo if online
+try:
+    log("Validating close price with OpenAlgo quote...")
+    resp = client.quotes(symbol="NIFTY", exchange="NSE")
+    if isinstance(resp, dict) and resp.get('status') == 'success':
+        oa_quote = resp.get('data', {})
+        oa_close = oa_quote.get('prev_close') or oa_quote.get('close')
+        if oa_close:
+            oa_close = round(float(oa_close), 2)
+            if abs(prev_close - oa_close) > 10.0:
+                log(f"⚠️ [WARNING] Prev Close mismatch! Strategy calculated: {prev_close} | OpenAlgo quote: {oa_close}")
+            else:
+                log(f"OpenAlgo quote verified prev_close: {oa_close} (strategy: {prev_close})")
+except Exception as e:
+    log(f"WARN: Could not validate prev_close with OpenAlgo: {e}")
 
 
 print(f"\n  Pivot Levels (from {prev_date}):")
@@ -601,49 +644,88 @@ while now_hm() < MARKET_OPEN:
 # ── Get today's open and check gap ────────────────────────────────────────
 open_price = None
 
-# First, try to fetch the actual 09:15:00 open price from today's CSV file if we started late or if it is already available
-today_csv = os.path.join(os.path.dirname(__file__), "data", f"{today_str}_NIFTY.csv")
-if os.path.exists(today_csv):
-    try:
-        today_df = pd.read_csv(today_csv)
-        if not today_df.empty:
-            # Use 'open' column (actual candle open) if available, else fall back to 'price' (close)
-            if 'open' in today_df.columns:
-                open_price = round(float(today_df.iloc[0]['open']), 2)
-                log(f"Loaded actual 09:15 open price from today's CSV (open col): {open_price}")
-            else:
-                open_price = round(float(today_df.iloc[0]['price']), 2)
-                log(f"WARN: No 'open' column in CSV, using close as fallback open: {open_price}")
-    except Exception as e:
-        print(f"WARN: Failed to read open price from today's CSV: {e}")
-
-
-if not open_price:
-    # Try to fetch the official pre-market exchange-settled open price from Yahoo Finance
-    try:
-        log("Fetching official pre-market exchange-settled open price from Yahoo Finance...")
-        import yfinance as yf
-        ticker = yf.Ticker('^NSEI')
-        hist = ticker.history(period="1d")
-        if not hist.empty:
+# 1. First, try to fetch the official pre-market exchange-settled open price from Yahoo Finance
+try:
+    log("Fetching official pre-market exchange-settled open price from Yahoo Finance...")
+    import yfinance as yf
+    ticker = yf.Ticker('^NSEI')
+    hist = ticker.history(period="1d")
+    if not hist.empty:
+        # Check if yfinance row represents today's date
+        if hist.index[0].date() == date.today():
             open_price = round(float(hist.iloc[0]['Open']), 2)
-            log(f"Official exchange-settled open price loaded: {open_price}")
-    except Exception as e:
-        log(f"WARN: Failed to fetch official open price from yfinance: {e}")
+            log(f"Official pre-market settled open price loaded from Yahoo Finance: {open_price}")
+        else:
+            log(f"WARN: Yahoo Finance 1d history represents a past date ({hist.index[0].date()}), not today ({date.today()}). Skipping.")
+except Exception as e:
+    log(f"WARN: Failed to fetch official open price from yfinance: {e}")
 
+# 2. Try to fetch the actual 09:15:00 open price from today's CSV file if we started late or if it is already available
+if not open_price:
+    today_csv = os.path.join(os.path.dirname(__file__), "data", f"{today_str}_NIFTY.csv")
+    if os.path.exists(today_csv):
+        try:
+            today_df = pd.read_csv(today_csv)
+            if not today_df.empty:
+                # Use 'open' column (actual candle open) if available, else fall back to 'price' (close)
+                if 'open' in today_df.columns:
+                    open_price = round(float(today_df.iloc[0]['open']), 2)
+                    log(f"Loaded actual 09:15 open price from today's CSV (open col): {open_price}")
+                else:
+                    open_price = round(float(today_df.iloc[0]['price']), 2)
+                    log(f"WARN: No 'open' column in CSV, using close as fallback open: {open_price}")
+        except Exception as e:
+            print(f"WARN: Failed to read open price from today's CSV: {e}")
+
+# 3. Fallback to OpenAlgo quotes (first-tick LTP/Open)
 if not open_price:
     time.sleep(5)  # wait a few seconds for first tick
     for attempt in range(10):
-        open_price = get_live_nifty()
-        if open_price:
-            break
-        update_live_status("WAIT_MARKET", f"Waiting for first tick... Attempt {attempt+1}/10")
+        # Fetch quote details
+        try:
+            resp = client.quotes(symbol="NIFTY", exchange="NSE")
+            if isinstance(resp, dict) and resp.get('status') == 'success':
+                oa_quote = resp.get('data', {})
+                # Try to use 'open' from the quote if populated and not 0, otherwise fallback to 'ltp'
+                oa_open = oa_quote.get('open')
+                if oa_open and float(oa_open) > 1000.0:
+                    open_price = round(float(oa_open), 2)
+                    log(f"Loaded open price from OpenAlgo quote (open field): {open_price}")
+                    break
+                
+                oa_ltp = oa_quote.get('ltp')
+                if oa_ltp and float(oa_ltp) > 1000.0:
+                    open_price = round(float(oa_ltp), 2)
+                    log(f"Loaded open price from OpenAlgo quote (ltp field fallback): {open_price}")
+                    break
+        except Exception as e:
+            log(f"WARN: OpenAlgo quote attempt {attempt+1} failed: {e}")
+            
+        update_live_status("WAIT_MARKET", f"Waiting for first tick/quote... Attempt {attempt+1}/10")
         time.sleep(3)
 
 if not open_price:
     log("ERROR: Could not fetch opening price. Check OpenAlgo connection.")
     update_live_status("ERROR", "ERROR: Could not fetch opening price. Check OpenAlgo connection.")
     sys.exit(1)
+
+# Double check previous close with OpenAlgo quote for today's gap calculation
+oa_prev_close = None
+try:
+    resp = client.quotes(symbol="NIFTY", exchange="NSE")
+    if isinstance(resp, dict) and resp.get('status') == 'success':
+        oa_prev_close = resp.get('data', {}).get('prev_close')
+        if oa_prev_close:
+            oa_prev_close = round(float(oa_prev_close), 2)
+            log(f"OpenAlgo exchange quote reported previous close: {oa_prev_close}")
+except Exception as e:
+    log(f"WARN: Failed to verify prev_close with OpenAlgo quote: {e}")
+
+# If we have an exchange-reported prev_close, and it differs slightly from our yfinance/CSV,
+# we should prioritize the actual exchange-settled value to prevent gap calculation errors!
+if oa_prev_close and abs(prev_close - oa_prev_close) > 0.05 and abs(prev_close - oa_prev_close) < 25.0:
+    log(f"🔄 [ADJUSTMENT] Adjusting previous close from calculated {prev_close} to official exchange close {oa_prev_close} to ensure perfect gap accuracy!")
+    prev_close = oa_prev_close
 
 gap = round(open_price - prev_close, 2)
 log(f"Today open={open_price}  Prev close={prev_close}  Gap={'+' if gap>=0 else ''}{gap} pts")
