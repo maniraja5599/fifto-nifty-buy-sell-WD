@@ -785,6 +785,7 @@ if direction is not None:
 else:
     target_spot = None
     sl_spot = None
+    opt_type = None
     strat = "BASE Option Buying (Inactive)"
     base_status_desc = f"NO TRADE - {reason}"
 
