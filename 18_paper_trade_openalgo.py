@@ -743,33 +743,50 @@ else:
              else f"Gap {'up' if gap>0 else 'down'} but open {'below' if gap>0 else 'above'} P"
     log(f"NO TRADE - {reason}")
     update_live_status("NO_TRADE", f"NO TRADE - {reason}")
+    if strangle_active:
+        log("🔄 Strangle is active/recovered. Bypassing shutdown to continue monitoring the active strangle position...")
+        send_telegram_message(
+            f"⚠️ <b>BASE Strategy Skip!</b>\n"
+            f"• <b>NIFTY Open:</b> {open_price}\n"
+            f"• <b>Gap:</b> {gap:+.2f} pts\n"
+            f"• <b>Reason:</b> {reason}\n\n"
+            f"⚡ <i>Active Strangle is running. Engine will continue monitoring the strangle position...</i>"
+        )
+    else:
+        send_telegram_message(
+            f"⚠️ <b>No Trading Today! (BASE Strategy Skip)</b>\n"
+            f"• <b>NIFTY Open:</b> {open_price}\n"
+            f"• <b>Gap:</b> {gap:+.2f} pts\n"
+            f"• <b>Reason:</b> {reason}\n\n"
+            f"💤 <i>Trading engine will now shut down cleanly for the day.</i>"
+        )
+        sys.exit(0)
+
+
+if direction is not None:
+    log(f"Strategy : {strat}")
+    log(f"Watching : P={P} +/- {P_TOL}  ->  range [{P-P_TOL}, {P+P_TOL}]")
+    log(f"Target   : {target_spot}  |  SL: {sl_spot}  |  Cutoff: {ENTRY_CUTOFF}")
+
     send_telegram_message(
-        f"⚠️ <b>No Trading Today! (BASE Strategy Skip)</b>\n"
+        f"📈 <b>Market Opened & Gap Identified!</b>\n"
         f"• <b>NIFTY Open:</b> {open_price}\n"
-        f"• <b>Gap:</b> {gap:+.2f} pts\n"
-        f"• <b>Reason:</b> {reason}\n\n"
-        f"💤 <i>Trading engine will now shut down cleanly for the day.</i>"
+        f"• <b>Prev Close:</b> {prev_close}\n"
+        f"• <b>Gap:</b> {gap:+.2f} pts ({'Gap Up 🟢' if gap > 0 else 'Gap Down 🔴'})\n\n"
+        f"🎯 <b>Strategy Selected: Option Buying (BASE)</b>\n"
+        f"• <b>Direction:</b> {direction} ({opt_type})\n"
+        f"• <b>Trigger Level (P):</b> {P} (tolerance ±{P_TOL})\n"
+        f"• <b>Target Spot:</b> {target_spot}\n"
+        f"• <b>Stop Loss Spot:</b> {sl_spot}\n\n"
+        f"⚡ <i>Monitoring spot price for Pivot test...</i>"
     )
-    sys.exit(0)
 
-log(f"Strategy : {strat}")
-log(f"Watching : P={P} +/- {P_TOL}  ->  range [{P-P_TOL}, {P+P_TOL}]")
-log(f"Target   : {target_spot}  |  SL: {sl_spot}  |  Cutoff: {ENTRY_CUTOFF}")
-
-send_telegram_message(
-    f"📈 <b>Market Opened & Gap Identified!</b>\n"
-    f"• <b>NIFTY Open:</b> {open_price}\n"
-    f"• <b>Prev Close:</b> {prev_close}\n"
-    f"• <b>Gap:</b> {gap:+.2f} pts ({'Gap Up 🟢' if gap > 0 else 'Gap Down 🔴'})\n\n"
-    f"🎯 <b>Strategy Selected: Option Buying (BASE)</b>\n"
-    f"• <b>Direction:</b> {direction} ({opt_type})\n"
-    f"• <b>Trigger Level (P):</b> {P} (tolerance ±{P_TOL})\n"
-    f"• <b>Target Spot:</b> {target_spot}\n"
-    f"• <b>Stop Loss Spot:</b> {sl_spot}\n\n"
-    f"⚡ <i>Monitoring spot price for Pivot test...</i>"
-)
-
-update_live_status("SCANNING", f"Strategy: {strat}. Scanning for P-touch signal...")
+    update_live_status("SCANNING", f"Strategy: {strat}. Scanning for P-touch signal...")
+else:
+    target_spot = None
+    sl_spot = None
+    strat = "BASE Option Buying (Inactive)"
+    base_status_desc = f"NO TRADE - {reason}"
 
 # ── Exit Handlers ─────────────────────────────────────────────────────────
 def exit_base(res):
@@ -1035,7 +1052,7 @@ while True:
                 strangle_entered = True # mark as processed to prevent infinite attempts
 
     # ── 2. BASE SIGNAL SCANNING & delayed entry (before 13:00) ──
-    if not base_entered and not base_active:
+    if direction is not None and not base_entered and not base_active:
         if current_hm < ENTRY_CUTOFF:
             # Update 1-min candle highs and lows
             if bar_minute != current_hm:
