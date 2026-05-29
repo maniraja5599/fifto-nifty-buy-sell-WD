@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 
-DATA_DIR = r"C:\Users\manir\.gemini\antigravity\scratch\fifto-nifty-pivot-gap\data"
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 def load_spot_data(date_str, instrument_name):
     """

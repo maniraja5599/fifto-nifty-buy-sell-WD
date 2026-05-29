@@ -619,6 +619,19 @@ if os.path.exists(today_csv):
 
 
 if not open_price:
+    # Try to fetch the official pre-market exchange-settled open price from Yahoo Finance
+    try:
+        log("Fetching official pre-market exchange-settled open price from Yahoo Finance...")
+        import yfinance as yf
+        ticker = yf.Ticker('^NSEI')
+        hist = ticker.history(period="1d")
+        if not hist.empty:
+            open_price = round(float(hist.iloc[0]['Open']), 2)
+            log(f"Official exchange-settled open price loaded: {open_price}")
+    except Exception as e:
+        log(f"WARN: Failed to fetch official open price from yfinance: {e}")
+
+if not open_price:
     time.sleep(5)  # wait a few seconds for first tick
     for attempt in range(10):
         open_price = get_live_nifty()
