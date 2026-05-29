@@ -11,8 +11,9 @@ echo Current Time: %TIME%
 echo.
 
 :: ── Market Hours Guard ─────────────────────────────────────────────────────
-:: Get current hour and minute
-for /f "tokens=1-2 delims=:. " %%a in ("%TIME%") do (
+:: Get current hour and minute (handle leading spaces/single-digit hours correctly)
+set "TEMP_TIME=%TIME: =0%"
+for /f "tokens=1-2 delims=:. " %%a in ("%TEMP_TIME%") do (
     set /a CUR_H=1%%a - 100
     set /a CUR_M=1%%b - 100
 )
@@ -21,7 +22,8 @@ for /f "tokens=1-2 delims=:. " %%a in ("%TIME%") do (
 if %CUR_H% LSS 9 (
     echo [TIME] Before 09:00. Waiting for pre-open window...
     :WAIT_LOOP
-    for /f "tokens=1-2 delims=:. " %%a in ("%TIME%") do (
+    set "TEMP_TIME=%TIME: =0%"
+    for /f "tokens=1-2 delims=:. " %%a in ("%TEMP_TIME%") do (
         set /a CUR_H=1%%a - 100
         set /a CUR_M=1%%b - 100
     )
