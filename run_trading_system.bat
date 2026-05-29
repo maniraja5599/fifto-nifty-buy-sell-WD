@@ -93,12 +93,9 @@ echo --------------------------------------------------------
 echo.
 echo [4/4] Starting Auto-Scanner Engine...
 echo Press Ctrl+C to stop the system at any time.
+cd /d "%~dp0"
+
+echo Starting unified Dashboard Server...
+C:\Python314\python.exe dashboard_server.py
 echo.
-
-cd /d "C:\Users\manir\.gemini\antigravity\scratch\fifto-nifty-pivot-gap"
-
-start "FiFTO Dashboard Server" python dashboard_server.py
-timeout /t 3 >nul
-python 18_paper_trade_openalgo.py
-
 pause
